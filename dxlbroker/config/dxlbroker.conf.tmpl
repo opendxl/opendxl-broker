@@ -1,0 +1,81 @@
+# The broker identifier
+brokerId=@DXLBROKER_ID@
+
+# The broker listen port
+listenPort=8883
+
+# The message size limit
+messageSizeLimit=1048576
+
+# Whether to log to standard output
+stdOutLogger=true
+
+# The path to the broker log file
+logFile=@DXLBROKER_LOGDIR@/dxlbroker.log
+
+# The maximum size of the broker log file (bytes)
+maxLogSize=1048576
+
+# The maximum number of broker log files (rotated)
+maxLogFiles=10
+
+# Tha broker logging level: error, warn, info, or debug
+logLevel=info
+
+# Whether to log notice messages (connect, disconnect, etc.)
+logNotices=false
+
+# Whether to format the JSON that is being sent
+jsonPrettyPrint=false
+
+# Policy state files
+policyGeneralStateFile=@DXLBROKER_POLICYDIR@/general.policy
+policyBrokerStateFile=@DXLBROKER_POLICYDIR@/brokerstate.policy
+policyTopicAuthStateFile=@DXLBROKER_POLICYDIR@/topicauth.policy
+
+# The TTL for the broker
+brokerTtlMins=60
+
+# The interval to check TTL values
+ttlCheckIntervalMins=10
+# The number of minutes to add to TTL values as a grace period
+ttlGraceMins=5
+
+# Whether TLS is enabled
+tlsEnabled=true
+# The directory to place the certificate-related files
+certKeystoreDir=@DXLBROKER_KEYSTOREDIR@
+
+# Message sample interval for timing (secs)
+messageSampleSecs=60
+
+# The maximum size of the packet buffer in mosquitto (per context)
+maximumPacketBufferSize=500000
+
+# The approximate number of topic characters to send in a "batch"
+# of topics when sending broker state events.
+brokerStateTopicsCharsBatchSize=4096
+
+# Whether topic-based routing is enabled
+topicRoutingEnabled=true
+
+# Whether the topic-based routing cache is enabled
+topicRoutingCacheEnabled=true
+
+# The default delay for enabling the topic cache after a clear. It will be
+# disabled for the period specified. This is important as certain events in
+# the broker (fabric change, etc.) can cause multiple calls to clear in a
+# short period of time. The delay minimizes churn.
+topicRoutingCacheClearDelay=30
+
+# The set of ciphers to restrict the broker to
+ciphers=ECDH+AESGCM:DH+AESGCM:ECDH+AES256:DH+AES256:ECDH+AES128:DH+AES:RSA+AESGCM:CAMELLIA:RSA+AES:!3DES:!aNULL:!MD5
+
+# Whether test mode is enabled
+testModeEnabled=false
+
+# Whether the broker is managed by ePO/MA
+epoManaged=false
+
+# The broker library thread pool size
+brokerLibThreadPoolSize=1
