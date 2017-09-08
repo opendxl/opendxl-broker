@@ -15,5 +15,6 @@ RUN curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py" \
 COPY dxlbroker /dxlbroker
 
 EXPOSE 8883
+EXPOSE 8443
 
 ENTRYPOINT ["/dxlbroker/startup.sh"]

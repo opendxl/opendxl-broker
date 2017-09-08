@@ -209,9 +209,6 @@ else
     cat $DVOL_CLIENT_CA_CERT_FILE >> $DVOL_BROKER_CA_CERT_FILE \
         || { fail 'Unable to append Client CA to Broker CA.'; }
 
-    # Generate private key for the broker
-    openssl genrsa -out $DVOL_BROKER_KEY_FILE 2048 || { fail 'Error generating broker private key.'; }
-
     # Create broker CSR
     openssl req -out $DVOL_BROKER_CSR_FILE -subj "/CN=OpenDxlBroker-$BROKER_ID" -new -newkey rsa:2048 -nodes -keyout \
         $DVOL_BROKER_KEY_FILE \
@@ -229,9 +226,10 @@ else
 fi
 
 # Run the broker console
-#cd $DXLBROKER_CONSOLE_DIR || { fail 'Unable to change to broker console directory.'; }
-#python -m dxlbrokerconsole $DVOL_CONSOLE_CONFIG_DIR &
-#cd $DXLBROKER_DIR || { fail 'Unable to change to DXL broker directory.'; }
+cd $DXLBROKER_CONSOLE_DIR || { fail 'Unable to change to broker console directory.'; }
+pip install lib/*.whl || { fail 'Unable to install Broker Console.'; }
+python -m dxlconsole $DVOL_CONSOLE_CONFIG_DIR &
+cd $DXLBROKER_DIR || { fail 'Unable to change to DXL broker directory.'; }
 
 # Run the DXL broker
 $DXLBROKER_APP --config $DVOL_CONFIG_FILE
