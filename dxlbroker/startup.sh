@@ -10,6 +10,7 @@ DXLBROKER_CONSOLE_CONFIG_DIR=$DXLBROKER_CONSOLE_DIR/config
 DXLBROKER_CONSOLE_CONFIG_FILE=$DXLBROKER_CONSOLE_CONFIG_DIR/dxlconsole.config
 DXLBROKER_CONSOLE_LOGGING_FILE=$DXLBROKER_CONSOLE_CONFIG_DIR/logging.config
 DXLBROKER_CONSOLE_CLIENT_CONFIG_FILE=$DXLBROKER_CONSOLE_CONFIG_DIR/dxlclient.config
+DXLBROKER_CONSOLE_CLIENT_CONFIG_TMPL_FILE=$DXLBROKER_CONSOLE_CONFIG_DIR/dxlclient.config.tmpl
 
 MSGPACK_LIB=$DXLBROKER_LIB_DIR/libmsgpackc.so.2.0.0
 MSGPACK_LIB_SYMLINK1=$DXLBROKER_LIB_DIR/libmsgpackc.so.2
@@ -30,6 +31,7 @@ DVOL_CONSOLE_CONFIG_DIR=$DVOL/config/console
 DVOL_CONSOLE_CONFIG_FILE=$DVOL_CONSOLE_CONFIG_DIR/dxlconsole.config
 DVOL_CONSOLE_LOGGING_FILE=$DVOL_CONSOLE_CONFIG_DIR/logging.config
 DVOL_CONSOLE_CLIENT_CONFIG_FILE=$DVOL_CONSOLE_CONFIG_DIR/dxlclient.config
+DVOL_CONSOLE_CLIENT_CONFIG_TMPL_FILE=$DVOL_CONSOLE_CONFIG_DIR/dxlclient.config.tmpl
 DVOL_POLICY_DIR=$DVOL/policy
 DVOL_KEYSTORE_DIR=$DVOL/keystore
 DVOL_LOGS_DIR=$DVOL/logs
@@ -107,11 +109,21 @@ if [ ! -d DVOL_LOGS_DIR ]; then
 fi
 
 #
-# Copy console configuration files
+# Console configuration files
 #
 if [ ! -f $DVOL_CONSOLE_CONFIG_FILE ]; then
     cp $DXLBROKER_CONSOLE_CONFIG_FILE $DVOL_CONSOLE_CONFIG_FILE \
         || { fail 'Error copying console configuration file.'; }
+    sed -i "s,@CLIENT_CA_CERT_FILE@,$DVOL_CLIENT_CA_CERT_FILE,g" $DVOL_CONSOLE_CONFIG_FILE \
+        || { fail 'Error setting CA certificate file in console configuration file.'; }
+    sed -i "s,@CLIENT_CA_KEY_FILE@,$DVOL_CLIENT_CA_KEY_FILE,g" $DVOL_CONSOLE_CONFIG_FILE \
+        || { fail 'Error setting CA key file in console configuration file.'; }
+    sed -i "s,@BROKER_CA_BUNDLE_FILE@,$DVOL_BROKER_CA_CERT_FILE,g" $DVOL_CONSOLE_CONFIG_FILE \
+        || { fail 'Error setting broker CA bundle file in console configuration file.'; }
+    sed -i "s,@CLIENT_CA_PASSWORD@,$CERT_PASS,g" $DVOL_CONSOLE_CONFIG_FILE \
+        || { fail 'Error setting client CA password in console configuration file.'; }
+    sed -i "s,@CLIENT_CONFIG_TMPL_FILE@,$DVOL_CONSOLE_CLIENT_CONFIG_TMPL_FILE,g" $DVOL_CONSOLE_CONFIG_FILE \
+        || { fail 'Error setting client configuration template file in console configuration file.'; }
 fi
 if [ ! -f $DVOL_CONSOLE_CLIENT_CONFIG_FILE ]; then
     cp $DXLBROKER_CONSOLE_CLIENT_CONFIG_FILE $DVOL_CONSOLE_CLIENT_CONFIG_FILE \
@@ -120,6 +132,10 @@ fi
 if [ ! -f DVOL_CONSOLE_LOGGING_FILE ]; then
     cp $DXLBROKER_CONSOLE_LOGGING_FILE $DVOL_CONSOLE_LOGGING_FILE \
         || { fail 'Error copying console logging configuration file.'; }
+fi
+if [ ! -f $DVOL_CONSOLE_CLIENT_CONFIG_TMPL_FILE ]; then
+    cp $DXLBROKER_CONSOLE_CLIENT_CONFIG_TMPL_FILE $DVOL_CONSOLE_CLIENT_CONFIG_TMPL_FILE \
+        || { fail 'Error copying console client configuration template file.'; }
 fi
 
 #

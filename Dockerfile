@@ -4,7 +4,7 @@ VOLUME ["/dxlbroker-volume"]
 
 # Install OS packages
 RUN yum update -y \
-    && yum install -y util-linux openssl \
+    && yum install -y util-linux openssl net-tools \
     && yum clean all
 
 # Install Python PIP and required packages
