@@ -239,6 +239,11 @@ else
         -CAkey $DVOL_BROKER_CA_KEY_FILE -CAcreateserial -out $DVOL_BROKER_CERT_FILE -days $CERT_DAYS \
         -extfile $DVOL_BROKER_V3_EXT_FILE \
         || { fail 'Error signing broker CSR.'; }
+
+    # Remove temporary files
+    rm -f $DVOL_KEYSTORE_DIR/*.csr
+    rm -f $DVOL_KEYSTORE_DIR/*.srl
+    rm -f $DVOL_BROKER_V3_EXT_FILE
 fi
 
 # Run the broker console
