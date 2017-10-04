@@ -4,6 +4,8 @@
 
 The OpenDXL Broker is a freely available version of a [Data Exchange Layer](http://www.mcafee.com/us/solutions/data-exchange-layer.aspx) (DXL) broker.
 
+The broker executes in a standalone mode and does not require an external management interface.
+
 ## Documentation
 
 See the [Wiki](https://github.com/opendxl/opendxl-broker) for installation, configuration, and usage instructions for the OpenDXL Broker.
