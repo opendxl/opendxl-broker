@@ -6,7 +6,7 @@ The OpenDXL Broker is a freely available version of a [Data Exchange Layer](http
 
 The broker executes in a standalone mode and does not require an external management interface.
 
-The only currently supported delivery mechanism for the OpenDXL Broker is a Docker image.
+The only currently supported delivery mechanism for the OpenDXL Broker is a [Docker](https://www.docker.com/) image.
 
 ## Documentation
 
