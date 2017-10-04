@@ -8,7 +8,7 @@ The broker executes in a standalone mode and does not require an external manage
 
 ## Documentation
 
-See the [Wiki](https://github.com/opendxl/opendxl-broker) for installation, configuration, and usage instructions for the OpenDXL Broker.
+See the [Wiki](https://github.com/opendxl/opendxl-broker/wiki) for installation, configuration, and usage instructions for the OpenDXL Broker.
 
 ## Bugs and Feedback
 
