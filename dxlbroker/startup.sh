@@ -16,14 +16,6 @@ MSGPACK_LIB=$DXLBROKER_LIB_DIR/libmsgpackc.so.2.0.0
 MSGPACK_LIB_SYMLINK1=$DXLBROKER_LIB_DIR/libmsgpackc.so.2
 MSGPACK_LIB_SYMLINK2=$DXLBROKER_LIB_DIR/libmsgpackc.so
 
-CRYPTO_LIB=$DXLBROKER_LIB_DIR/libcrypto.so.10
-CRYPTO_LIB_SYMLINK1=$DXLBROKER_LIB_DIR/libcrypto.so.1.0.0
-CRYPTO_LIB_SYMLINK2=$DXLBROKER_LIB_DIR/libcrypto.so
-
-SSL_LIB=$DXLBROKER_LIB_DIR/libssl.so.10
-SSL_LIB_SYMLINK1=$DXLBROKER_LIB_DIR/libssl.so.1.0.0
-SSL_LIB_SYMLINK2=$DXLBROKER_LIB_DIR/libssl.so
-
 DVOL=/dxlbroker-volume
 DVOL_CONFIG_DIR=$DVOL/config
 DVOL_CONFIG_FILE=$DVOL_CONFIG_DIR/dxlbroker.conf
@@ -69,18 +61,6 @@ if [ ! -f $MSGPACK_LIB_SYMLINK1 ]; then
 fi
 if [ ! -f $MSGPACK_LIB_SYMLINK2 ]; then
     ln -s $MSGPACK_LIB $MSGPACK_LIB_SYMLINK2 || { fail 'Error creating message pack symbolic link (2).'; }
-fi
-if [ ! -f $CRYPTO_LIB_SYMLINK1 ]; then
-    ln -s $CRYPTO_LIB $CRYPTO_LIB_SYMLINK1 || { fail 'Error creating crypto symbolic link (1).'; }
-fi
-if [ ! -f $CRYPTO_LIB_SYMLINK2 ]; then
-    ln -s $CRYPTO_LIB $CRYPTO_LIB_SYMLINK2 || { fail 'Error creating crypto symbolic link (2).'; }
-fi
-if [ ! -f $SSL_LIB_SYMLINK1 ]; then
-    ln -s $SSL_LIB $SSL_LIB_SYMLINK1 || { fail 'Error creating ssl symbolic link (1).'; }
-fi
-if [ ! -f $SSL_LIB_SYMLINK2 ]; then
-    ln -s $SSL_LIB $SSL_LIB_SYMLINK2 || { fail 'Error creating ssl symbolic link (2).'; }
 fi
 
 #
