@@ -10,7 +10,7 @@ RUN yum update -y \
 # Install Python PIP and required packages
 RUN curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py" \
     && python get-pip.py \
-    && pip install tornado dxlbootstrap dxlclient dxlconsole==0.1.0
+    && pip install tornado dxlbootstrap dxlclient dxlconsole==0.1.1
     
 COPY dxlbroker /dxlbroker
 COPY LICENSE* /dxlbroker/
