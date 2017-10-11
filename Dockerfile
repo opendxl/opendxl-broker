@@ -13,7 +13,7 @@ RUN curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py" \
     && pip install tornado dxlbootstrap dxlclient dxlconsole==0.1.0
     
 COPY dxlbroker /dxlbroker
-COPY LICENSE* /dxlbroker
+COPY LICENSE* /dxlbroker/
 
 EXPOSE 8883
 EXPOSE 8443
