@@ -228,7 +228,6 @@ fi
 
 # Run the broker console
 cd $DXLBROKER_CONSOLE_DIR || { fail 'Unable to change to broker console directory.'; }
-pip install lib/*.whl || { fail 'Unable to install Broker Console.'; }
 python -m dxlconsole $DVOL_CONSOLE_CONFIG_DIR &
 cd $DXLBROKER_DIR || { fail 'Unable to change to DXL broker directory.'; }
 
