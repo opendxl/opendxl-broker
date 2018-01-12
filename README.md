@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/opendxl/opendxl-broker.png?branch=master)](https://travis-ci.org/opendxl/opendxl-broker)
+
 # OpenDXL Broker
 
 ## Overview
