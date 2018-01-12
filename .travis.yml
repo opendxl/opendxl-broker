@@ -16,7 +16,6 @@ before_install:
 # command to install dependencies
 install:
   - pip install dxlclient
-  - pip install .
 
 script:
   - python -m dxlclient provisionconfig dxlclient/test 127.0.0.1 client -u admin -p password
