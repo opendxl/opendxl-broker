@@ -1,4 +1,6 @@
 [![Build Status](https://travis-ci.org/opendxl/opendxl-broker.png?branch=master)](https://travis-ci.org/opendxl/opendxl-broker)
+[![Docker Build Status](https://img.shields.io/docker/build/opendxl/opendxl-broker.svg)](https://hub.docker.com/r/opendxl/opendxl-broker/)
+
 
 # OpenDXL Broker
 
