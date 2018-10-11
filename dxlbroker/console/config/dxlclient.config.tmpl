@@ -1,9 +1,0 @@
-[Certs]
-BrokerCertChain=@BROKER_CA_BUNDLE_FILE@
-CertFile=@CLIENT_CERT_FILE@
-PrivateKey=@CLIENT_KEY_FILE@
-
-[Brokers]
-local=local;8883;localhost;127.0.0.1
-external=external;8883;@EXTERNAL_BROKER_HOST@;@EXTERNAL_BROKER_IP@
-docker=docker;8883;@DOCKER_BROKER_IP@;@DOCKER_BROKER_IP@
