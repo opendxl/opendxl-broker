@@ -1,9 +1,13 @@
 #!/bin/bash
 
 DXLBROKER_DIR=/dxlbroker
-DXLBROKER_APP=/dxlbroker/sbin/dxlbroker
+DXLBROKER_APP=/dxlbroker/bin/dxlbroker
 DXLBROKER_CONFIG_DIR=$DXLBROKER_DIR/config
 DXLBROKER_CONFIG_FILE=$DXLBROKER_CONFIG_DIR/dxlbroker.conf.tmpl
+DXLBROKER_POLICY_DIR=$DXLBROKER_DIR/policy
+DXLBROKER_GENERAL_POLICY_FILE=$DXLBROKER_POLICY_DIR/general.policy
+DXLBROKER_BROKER_STATE_POLICY_FILE=$DXLBROKER_POLICY_DIR/brokerstate.policy
+DXLBROKER_TOPIC_AUTH_POLICY_FILE=$DXLBROKER_POLICY_DIR/topicauth.policy
 DXLBROKER_LIB_DIR=$DXLBROKER_DIR/lib
 DXLBROKER_CONSOLE_DIR=$DXLBROKER_DIR/console
 DXLBROKER_CONSOLE_CONFIG_DIR=$DXLBROKER_CONSOLE_DIR/config
@@ -19,6 +23,11 @@ MSGPACK_LIB_SYMLINK2=$DXLBROKER_LIB_DIR/libmsgpackc.so
 DVOL=/dxlbroker-volume
 DVOL_CONFIG_DIR=$DVOL/config
 DVOL_CONFIG_FILE=$DVOL_CONFIG_DIR/dxlbroker.conf
+DVOL_POLICY_DIR=$DVOL/policy
+DVOL_GENERAL_POLICY_FILE=$DVOL_POLICY_DIR/general.policy
+DVOL_BROKER_STATE_POLICY_FILE=$DVOL_POLICY_DIR/brokerstate.policy
+DVOL_TOPIC_AUTH_POLICY_FILE=$DVOL_POLICY_DIR/topicauth.policy
+DVOL_CONFIG_DEFAULTS_FILE=$DVOL_CONFIG_DIR/dxlbroker.conf.defaults
 DVOL_CONSOLE_CONFIG_DIR=$DVOL/config/console
 DVOL_CONSOLE_CONFIG_FILE=$DVOL_CONSOLE_CONFIG_DIR/dxlconsole.config
 DVOL_CONSOLE_LOGGING_FILE=$DVOL_CONSOLE_CONFIG_DIR/logging.config
@@ -32,6 +41,7 @@ DVOL_CLIENT_CA_KEY_FILE=$DVOL_KEYSTORE_DIR/ca-client.key
 DVOL_BROKER_CA_CERT_FILE=$DVOL_KEYSTORE_DIR/ca-broker.crt
 DVOL_BROKER_CA_KEY_FILE=$DVOL_KEYSTORE_DIR/ca-broker.key
 DVOL_BROKER_CA_CSR_FILE=$DVOL_KEYSTORE_DIR/ca-broker.csr
+DVOL_BROKER_CAS_LIST_FILE=$DVOL_KEYSTORE_DIR/ca-brokers.lst
 DVOL_BROKER_CERT_FILE=$DVOL_KEYSTORE_DIR/broker.crt
 DVOL_BROKER_KEY_FILE=$DVOL_KEYSTORE_DIR/broker.key
 DVOL_BROKER_CSR_FILE=$DVOL_KEYSTORE_DIR/broker.csr
@@ -119,24 +129,40 @@ if [ ! -f $DVOL_CONSOLE_CLIENT_CONFIG_TMPL_FILE ]; then
 fi
 
 #
+# Create policy files
+#
+if [ ! -f $DVOL_GENERAL_POLICY_FILE ]; then
+    cp $DXLBROKER_GENERAL_POLICY_FILE $DVOL_GENERAL_POLICY_FILE \
+        || { fail 'Error copying general policy file.'; }
+fi
+if [ ! -f $DVOL_BROKER_STATE_POLICY_FILE ]; then
+    cp $DXLBROKER_BROKER_STATE_POLICY_FILE $DVOL_BROKER_STATE_POLICY_FILE \
+        || { fail 'Error copying broker state policy file.'; }
+fi
+if [ ! -f $DVOL_TOPIC_AUTH_POLICY_FILE ]; then
+    cp $DXLBROKER_TOPIC_AUTH_POLICY_FILE $DVOL_TOPIC_AUTH_POLICY_FILE \
+        || { fail 'Error copying topic authorization policy file.'; }
+fi
+
+#
 # Create broker configuration file
 #
 
-if [ ! -f $DVOL_CONFIG_FILE ]; then
-    echo "No broker configuration file found, creating one..."
-    cp $DXLBROKER_CONFIG_FILE $DVOL_CONFIG_FILE || { fail 'Copy failed.'; }
+if [ ! -f $DVOL_CONFIG_DEFAULTS_FILE ]; then
+    echo "No broker defaults configuration file found, creating one..."
+    cp $DXLBROKER_CONFIG_FILE $DVOL_CONFIG_DEFAULTS_FILE || { fail 'Copy failed.'; }
 
     echo "  Setting broker identifier..."
     BROKERID=$(uuidgen) || { fail 'Broker identifier generation failed.'; }
-    sed -i "s/@DXLBROKER_ID@/$BROKERID/g" $DVOL_CONFIG_FILE \
+    sed -i "s/@DXLBROKER_ID@/$BROKERID/g" $DVOL_CONFIG_DEFAULTS_FILE \
         || { fail 'Error setting broker identifier in config file.'; }
 
     echo "  Updating configuration paths..."
-    sed -i "s,@DXLBROKER_POLICYDIR@,$DVOL_POLICY_DIR,g" $DVOL_CONFIG_FILE \
+    sed -i "s,@DXLBROKER_POLICYDIR@,$DVOL_POLICY_DIR,g" $DVOL_CONFIG_DEFAULTS_FILE \
         || { fail 'Error setting policy directory in config file.'; }
-    sed -i "s,@DXLBROKER_KEYSTOREDIR@,$DVOL_KEYSTORE_DIR,g" $DVOL_CONFIG_FILE \
+    sed -i "s,@DXLBROKER_KEYSTOREDIR@,$DVOL_KEYSTORE_DIR,g" $DVOL_CONFIG_DEFAULTS_FILE \
         || { fail 'Error setting keystore directory in config file.'; }
-    sed -i "s,@DXLBROKER_LOGDIR@,$DVOL_LOGS_DIR,g" $DVOL_CONFIG_FILE \
+    sed -i "s,@DXLBROKER_LOGDIR@,$DVOL_LOGS_DIR,g" $DVOL_CONFIG_DEFAULTS_FILE \
         || { fail 'Error setting logs directory in config file.'; }
 fi
 
@@ -144,7 +170,7 @@ fi
 # Read broker identifier from configuration file
 #
 
-BROKER_ID=$(awk -F"brokerId *= *" '{printf $2}' $DVOL_CONFIG_FILE)
+BROKER_ID=$(awk -F"brokerId *= *" '{printf $2}' $DVOL_CONFIG_DEFAULTS_FILE)
 if [ -z $BROKER_ID ]; then
     fail 'Unable to find broker identifier in configuration file.'
 fi
@@ -201,6 +227,11 @@ else
          -extfile $DVOL_BROKER_V3_EXT_FILE \
         || { fail 'Error signing broker CA.'; }
 
+    # Capture Broker CA fingerprint
+    openssl x509 -in $DVOL_BROKER_CA_CERT_FILE -fingerprint -noout \
+        | sed -e 's/://g' -e 's/.*=\(.*\)/\L\1/' > $DVOL_BROKER_CAS_LIST_FILE \
+        || { fail 'Error determining broker CA fingerprint'; }
+
     # Append Client CA to Broker CA
     cat $DVOL_CLIENT_CA_CERT_FILE >> $DVOL_BROKER_CA_CERT_FILE \
         || { fail 'Unable to append Client CA to Broker CA.'; }
@@ -222,13 +253,12 @@ else
 
     # Remove temporary files
     rm -f $DVOL_KEYSTORE_DIR/*.csr
-    rm -f $DVOL_KEYSTORE_DIR/*.srl
     rm -f $DVOL_BROKER_V3_EXT_FILE
 fi
 
 # Run the broker console
 cd $DXLBROKER_CONSOLE_DIR || { fail 'Unable to change to broker console directory.'; }
-python -m dxlconsole $DVOL_CONSOLE_CONFIG_DIR &
+python2.7 -m dxlconsole $DVOL_CONSOLE_CONFIG_DIR $BROKER_ID &
 cd $DXLBROKER_DIR || { fail 'Unable to change to DXL broker directory.'; }
 
 # Run the DXL broker

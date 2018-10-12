@@ -1,0 +1,5 @@
+# The keep-alive interval (in minutes) for bridges between brokers
+keepAlive=1
+
+# The maximum number of client connections allows (0 = unlimited)
+connectionLimit=0

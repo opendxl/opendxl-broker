@@ -1,0 +1,65 @@
+//
+// This policy file contains information about each of the brokers comprising
+// a DXL fabric and how they should bridge to each other.
+//
+// For example, the following hierarchy:
+//
+//        {RootHub[broker1, broker2])
+//                /        \
+//           (broker3)  (broker4)
+//                          |
+//                      (broker5)
+//
+// Can be modeled with the following policy:
+//
+//      {
+//          "hubs": [
+//              {
+//                  "id": "rootHub",
+//                  "primaryBroker": "broker1",
+//                  "secondaryBroker": "broker2",
+//                  "name": "Root Hub"
+//              }
+//          ],
+//          "brokers": [
+//              {
+//                  "id": "broker1",
+//                  "hostname": "broker1",
+//                  "port": "8883",
+//                  "altHostname": "192.168.1.1"
+//              },
+//              {
+//                  "id": "broker2",
+//                  "hostname": "broker2",
+//                  "port": "8883",
+//                  "altHostname": "192.168.1.2"
+//              },
+//              {
+//                  "id": "broker3",
+//                  "hostname": "broker3",
+//                  "port": "8883",
+//                  "altHostname": "192.168.1.3",
+//                  "parentId": "rootHub"
+//              },
+//              {
+//                  "id": "broker4",
+//                  "hostname": "broker4",
+//                  "port": "8883",
+//                  "altHostname": "192.168.1.4",
+//                  "parentId": "rootHub"
+//              },
+//              {
+//                  "id": "broker5",
+//                  "hostname": "broker5",
+//                  "port": "8883",
+//                  "altHostname": "192.168.1.5",
+//                  "parentId": "broker4"
+//              }
+//          ]
+//      }
+//
+
+{
+    "hubs": [],
+    "brokers": []
+}

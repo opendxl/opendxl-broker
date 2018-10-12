@@ -1,0 +1,48 @@
+//
+// This policy file contains authorization rules for topics on a DXL fabric.
+//
+// Topics are open by default. Any topics that are to be restricted to certain
+// clients must be listed within this file. Clients are identified by the
+// thumbprint of their certificate. This policy also supports using the
+// thumbprints of certificate authorities which would apply to any
+// certificates that have been signed by that CA (or as part of a
+// chain containing the CA).
+//
+// The thumbprint must be in the following format (no colons and lowercase):
+//
+//     0a97b7282ab8fc30a1be704ed6c208fb7637ddeb
+//
+// The following is an example of a valid authorization policy:
+//
+//  {
+//      "send": [
+//          {
+//              // Restrict sending messages on "/topic1" to the following clients
+//              "topic":"/topic1",
+//              "clients": [
+//                  "0a97b7282ab8fc30a1be704ed6c208fb7637ddeb", // My test client
+//                  "ba8f5dd8763143444a86fefeecd3eb7b4aa2fe4f"  // Some other client
+//              ]
+//          }
+//      ],
+//      "receive": [
+//          {
+//              // Restrict receiving messages on "/topic2" to the following clients
+//              "topic":"/topic2",
+//              "clients": [
+//                  "0a97b7282ab8fc30a1be704ed6c208fb7637ddeb"  // My test client
+//              ]
+//          },
+//          {
+//               // No clients can receive messages on "/topic3"
+//              "topic":"/topic3",
+//              "clients": []
+//          }
+//      ]
+//  }
+//
+
+{
+    "send": [],
+    "receive": []
+}

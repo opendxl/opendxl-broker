@@ -1,0 +1,38 @@
+/******************************************************************************
+ * Copyright (c) 2018 McAfee, LLC - All Rights Reserved.
+ *****************************************************************************/
+
+#include "message/include/DxlRequest.h"
+
+using namespace dxl::broker::message;
+
+/** {@inheritDoc} */
+DxlRequest::DxlRequest( dxl_message_t* msg ) : DxlMessage( msg )
+{      
+}
+
+/** {@inheritDoc} */
+const char* DxlRequest::getReplyToTopic() const
+{
+    return getMessage()->dxl_message_specificData.requestData->replyToTopic;
+}
+
+/** {@inheritDoc} */
+void DxlRequest::setDestinationServiceId( const char* serviceId )
+{
+    setDxlRequestMessageAttributes( NULL, getMessage(), service_instance_id, serviceId );
+
+    // Mark dirty
+    markDirty();
+}
+
+/** {@inheritDoc} */
+const char* DxlRequest::getDestinationServiceId() const
+{
+    return getMessage()->dxl_message_specificData.requestData->serviceInstanceId;
+}
+
+/** {@inheritDoc} */
+DxlRequest::~DxlRequest()
+{
+}

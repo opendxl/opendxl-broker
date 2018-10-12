@@ -1,6 +1,9 @@
 # The broker identifier
 brokerId=@DXLBROKER_ID@
 
+# The user to run the broker as
+user=dxl
+
 # The broker listen port
 listenPort=8883
 
@@ -43,6 +46,8 @@ ttlGraceMins=5
 
 # Whether TLS is enabled
 tlsEnabled=true
+# Whether TLS bridging is insecure (not validating host name)
+tlsBridgingInsecure=true
 # The directory to place the certificate-related files
 certKeystoreDir=@DXLBROKER_KEYSTOREDIR@
 
@@ -73,9 +78,6 @@ ciphers=ECDH+AESGCM:DH+AESGCM:ECDH+AES256:DH+AES256:ECDH+AES128:DH+AES:RSA+AESGC
 
 # Whether test mode is enabled
 testModeEnabled=false
-
-# Whether the broker is managed by ePO/MA
-epoManaged=false
 
 # The broker library thread pool size
 brokerLibThreadPoolSize=1
