@@ -290,6 +290,13 @@ public:
     static bool isTlsEnabled() { return sm_tlsEnabled; }
 
     /**
+     * Sets the fips mode of the broker
+     *
+     * @param	mode The fips mode of the broker (true, if enabled)
+     */
+    static void setFipsEnabled( bool fipsEnabled ) { sm_fipsEnabled = fipsEnabled; }
+
+    /**
      * Returns whether or not FIPS is enabled
      *
      * @return  Whether or not FIPS is enabled

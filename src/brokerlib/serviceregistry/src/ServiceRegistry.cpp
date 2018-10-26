@@ -280,6 +280,7 @@ void ServiceRegistry::updateService( serviceRegistrationPtr_t existingReg, const
     if( existingReg->getRequestChannels() == reg->getRequestChannels() &&
         existingReg->getBrokerGuid() == reg->getBrokerGuid() &&
         existingReg->getClientGuid() == reg->getClientGuid() &&
+        existingReg->getClientInstanceGuid() == reg->getClientInstanceGuid() &&
         existingReg->getServiceType() == reg->getServiceType() &&
         existingReg->getMetaData() == reg->getMetaData() &&
         existingReg->getTargetTenantGuids() == reg->getTargetTenantGuids() &&
