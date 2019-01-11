@@ -47,7 +47,7 @@ RUN if [ "$build_docs" = "true" ]; then apt-get -y install flex bison python3 do
 
 FROM debian:stretch-slim
 
-ARG DXL_CONSOLE_VERSION=0.2.2
+ARG DXL_CONSOLE_VERSION=0.3.1
 
 # Install packages
 RUN apt-get update -y \
