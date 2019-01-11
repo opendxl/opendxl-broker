@@ -114,6 +114,8 @@ if [ ! -f $DVOL_CONSOLE_CONFIG_FILE ]; then
         || { fail 'Error setting client CA password in console configuration file.'; }
     sed -i "s,@CLIENT_CONFIG_TMPL_FILE@,$DVOL_CONSOLE_CLIENT_CONFIG_TMPL_FILE,g" $DVOL_CONSOLE_CONFIG_FILE \
         || { fail 'Error setting client configuration template file in console configuration file.'; }
+    sed -i "s,@BROKER_STATE_POLICY_FILE@,$DVOL_BROKER_STATE_POLICY_FILE,g" $DVOL_CONSOLE_CONFIG_FILE \
+        || { fail 'Error setting broker state policy file in console configuration file.'; }
 fi
 if [ ! -f $DVOL_CONSOLE_CLIENT_CONFIG_FILE ]; then
     cp $DXLBROKER_CONSOLE_CLIENT_CONFIG_FILE $DVOL_CONSOLE_CLIENT_CONFIG_FILE \
