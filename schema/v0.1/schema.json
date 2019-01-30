@@ -1,0 +1,741 @@
+{
+  "openDxlApi": "0.1",
+  "info": {
+    "title": "DXL Broker",
+    "version": "0.1",
+    "description": "DXL Broker",
+    "contact": {
+      "url": "https://www.opendxl.com"
+    }
+  },
+  "solutions": {
+    "DXL Broker": {
+      "externalDocs": {
+        "url": "https://github.com/opendxl/opendxl-broker"
+      },
+      "events": [
+        { "$ref": "#/events/~1mcafee~1event~1dxl~1brokerregistry~1brokerstate" },
+        { "$ref": "#/events/~1mcafee~1event~1dxl~1brokerregistry~1brokerstatetopics" },
+        { "$ref": "#/events/~1mcafee~1event~1dxl~1brokerregistry~1topicadded" },
+        { "$ref": "#/events/~1mcafee~1event~1dxl~1brokerregistry~1topicremoved" },
+        { "$ref": "#/events/~1mcafee~1event~1dxl~1clientregistry~1connect" },
+        { "$ref": "#/events/~1mcafee~1event~1dxl~1clientregistry~1disconnect" },
+        { "$ref": "#/events/~1mcafee~1event~1dxl~1fabricchange" },
+        { "$ref": "#/events/~1mcafee~1event~1dxl~1revocation~1list" },
+        { "$ref": "#/events/~1mcafee~1event~1dxl~1svcregistry~1register" },
+        { "$ref": "#/events/~1mcafee~1event~1dxl~1svcregistry~1unregister" }
+      ]
+    }
+  },
+  "services": {
+    "DXL Broker Service": {
+      "info": {
+        "title": "Supported Service Requests",
+        "version": "0.1",
+        "description": "This is a 'placeholder' service section for grouping the service requests listed in this schema. This is not a true DXL service and will not appear in the DXL Broker's service registry."
+      },
+      "requests": [
+        { "$ref": "#/requests/~1mcafee~1service~1dxl~1broker~1health" },
+        { "$ref": "#/requests/~1mcafee~1service~1dxl~1broker~1subs" },
+        { "$ref": "#/requests/~1mcafee~1service~1dxl~1brokerregistry~1query" },
+        { "$ref": "#/requests/~1mcafee~1service~1dxl~1clientregistry~1query" },
+        { "$ref": "#/requests/~1mcafee~1service~1dxl~1svcregistry~1query" },
+        { "$ref": "#/requests/~1mcafee~1service~1dxl~1svcregistry~1register" },
+        { "$ref": "#/requests/~1mcafee~1service~1dxl~1svcregistry~1unregister" }
+      ]
+    }
+  },
+  "events": {
+    "/mcafee/event/dxl/brokerregistry/brokerstate": {
+      "description": "Event containing the current state of a broker. Sent whenever the broker state changes (connections, disconnections, etc.).",
+      "payload": {
+        "$ref": "#/definitions/BrokerStateEvent"
+      }
+    },
+    "/mcafee/event/dxl/brokerregistry/brokerstatetopics": {
+      "description": "Event containing all of the currently subscribed topics on the publishing broker. Sent whenever the list changes (subscribe/unsubscribe) or a new broker bridge is established.",
+      "payload": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "description": "State of the topics. 0 = None, 1 = Start, 2 = End.",
+            "type": "integer",
+            "enum": [
+              0,
+              1,
+              2
+            ]
+          },
+          "index": {
+            "description": "Index in the batch (0-based)",
+            "type": "integer"
+          },
+          "topics": {
+            "description": "Topics",
+            "$ref": "https://opendxl.github.io/opendxl-api-specification/v0.1/schema.json#/definitions/stringArray"
+          }
+        },
+        "example": {
+          "state": 3,
+          "index": 0,
+          "topics": [
+            "/opendxl/service/sample/message",
+            "/opendxl/service/sample/stats/report"
+          ]
+        }
+      },
+      "otherFields": {
+        "changeCount": {
+          "description": "The number of times the topic list has been updated (for tracking latest)"
+        },
+        "startTime": {
+          "description": "Broker start time (as seconds from epoch)"
+        }
+      }
+    },
+    "/mcafee/event/dxl/brokerregistry/topicadded": {
+      "description": "Event sent when a new topic is subscribed to on the broker.",
+      "payload": {
+        "type": "object",
+        "properties": {
+          "topic": {
+            "description": "Topic that has been added",
+            "type": "string"
+          }
+        },
+        "example": {
+          "topic": "/isecg/sample/basicservice"
+        }
+      },
+      "otherFields": {
+        "changeCount": {
+          "description": "The number of times the topic list has been updated (for tracking latest)"
+        },
+        "startTime": {
+          "description": "Broker start time (as seconds from epoch)"
+        }
+      }
+    },
+    "/mcafee/event/dxl/brokerregistry/topicremoved": {
+      "description": "Event sent when a broker no longer has any clients subscribed to a topic.",
+      "payload": {
+        "type": "object",
+        "properties": {
+          "topic": {
+            "description": "Topic that has been removed",
+            "type": "string"
+          }
+        },
+        "example": {
+          "topic": "/isecg/sample/basicservice"
+        }
+      },
+      "otherFields": {
+        "changeCount": {
+          "description": "The number of times the topic list has been updated (for tracking latest)"
+        },
+        "startTime": {
+          "description": "Broker start time (as seconds from epoch)"
+        }
+      }
+    },
+    "/mcafee/event/dxl/clientregistry/connect": {
+      "description": "Event sent when a client connects. Only sent if the sendConnectEvents broker property is set to true.",
+      "payload": {
+        "type": "object",
+        "properties": {
+          "clientGuid": {
+            "description": "Client identifier",
+            "type": "string"
+          }
+        },
+        "example": {
+          "clientGuid": "{12345678-abcd-1234-abcd-123456789abc}"
+        }
+      }
+    },
+    "/mcafee/event/dxl/clientregistry/disconnect": {
+      "description": "Event sent when a client disconnects. Only sent if the sendConnectEvents broker property is set to true.",
+      "payload": {
+        "type": "object",
+        "properties": {
+          "clientGuid": {
+            "description": "Client identifier",
+            "type": "string"
+          }
+        },
+        "example": {
+          "clientGuid": "{e834986f-4e14-44d9-979a-acc35512c894}"
+        }
+      }
+    },
+    "/mcafee/event/dxl/fabricchange": {
+      "description": "Event sent to notify subscribers of a change in the DXL fabric (connection, disconnection, etc.). Brokers that receive this event will send a broker state event.",
+      "payload": {
+        "example": {}
+      }
+    },
+    "/mcafee/event/dxl/revocation/list": {
+      "description": "Event containing a list of certificates that should be denied access to the fabric.",
+      "payload": {
+        "description": "List of certificate data (1 certificate per line)",
+        "type": "string",
+        "example": "84841b6fd81483746dc7390e8e44dfa4c86e1ba8"
+      }
+    },
+    "/mcafee/event/dxl/svcregistry/register": {
+      "description": "Event used to notify subscribers that a service has been registered.",
+      "payload": {
+        "$ref": "#/definitions/ServiceRegistryRegisterEvent"
+      }
+    },
+    "/mcafee/event/dxl/svcregistry/unregister": {
+      "description": "Event used to notify subscribers that a service has been unregistered.",
+      "payload": {
+        "type": "object",
+        "properties": {
+          "serviceGuid": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "serviceGuid": "{3614fef1-635d-456d-82ce-57c165e0b326}"
+        }
+      }
+    }
+  },
+  "requests": {
+    "/mcafee/service/dxl/broker/health": {
+      "description": "Request for broker health information. Each broker will send a DXL response to this request separately with their current health status.",
+      "payload": {
+        "example": {}
+      },
+      "response": {
+        "payload": {
+          "type": "object",
+          "properties": {
+            "connectedClients": {
+              "description": "Number of connected clients",
+              "type": "integer"
+            },
+            "incomingMessages": {
+              "description": "Number of incoming messages",
+              "type": "number",
+              "format": "double"
+            },
+            "ipe": {
+              "description": "IPE health",
+              "type": "object",
+              "properties": {
+                "fabrics": {
+                  "$ref": "#/definitions/IpeHealthPayload"
+                },
+                "patterns": {
+                  "$ref": "#/definitions/IpeHealthPayload"
+                },
+                "plugins": {
+                  "$ref": "#/definitions/IpeHealthPayload"
+                },
+                "properties": {
+                  "$ref": "#/definitions/IpeHealthPayloadProperties"
+                }
+              }
+            },
+            "localServiceCounter": {
+              "description": "Count of local services registered with the broker",
+              "type": "integer"
+            },
+            "outgoingMessages": {
+              "description": "Number of outgoing messages",
+              "type": "number",
+              "format": "double"
+            },
+            "startTime": {
+              "description": "Start time of the broker (as seconds from epoch)",
+              "type": "integer"
+            }
+          },
+          "example": {
+            "connectedClients": 5,
+            "incomingMessages": 0.01666666753590107,
+            "ipe": {
+              "fabrics": {
+                "ipeSample": {
+                  "displayName": "IPE Sample",
+                  "properties": {
+                    "dxl.ipe.property.sampleMessageCount": {
+                      "displayName": "Sample Message Count",
+                      "type": "numeric",
+                      "value": "1816"
+                    },
+                    "dxl.ipe.property.sampleMessageSize": {
+                      "displayName": "Sample Message Size (Bytes)",
+                      "type": "numeric",
+                      "value": "66772"
+                    }
+                  }
+                },
+                "localExample": {
+                  "displayName": "Local Example IPE",
+                  "properties": {
+                    "dxl.ipe.property.localSuccessCount": {
+                      "displayName": "Local success count",
+                      "type": "numeric",
+                      "value": "5197"
+                    }
+                  }
+                }
+              },
+              "patterns": {
+                "localExample.reactionResultErrors": {
+                  "displayName": "Local Reaction Errors Pattern",
+                  "properties": {}
+                },
+                "localExample.syncData": {
+                  "displayName": "Local Sync Data Pattern",
+                  "properties": {
+                    "dxl.ipe.property.localMessagesLastTime": {
+                      "displayName": "Last local message time",
+                      "type": "date",
+                      "value": "1546971467079"
+                    },
+                    "dxl.ipe.property.localMessagesProcessed": {
+                      "displayName": "Local messages processed",
+                      "type": "numeric",
+                      "value": "4634"
+                    }
+                  }
+                }
+              },
+              "plugins": {
+                "epo": {
+                  "displayName": "epo",
+                  "properties": {}
+                }
+              },
+              "properties": {}
+            },
+            "localServiceCounter": 3,
+            "outgoingMessages": 0.01666666753590107,
+            "startTime": 1537401471
+          }
+        }
+      }
+    },
+    "/mcafee/service/dxl/broker/subs": {
+      "description": "Request the number of the subscriptions for the given topic.",
+      "payload": {
+        "type": "object",
+        "required": [
+          "topic"
+        ],
+        "properties": {
+          "topic": {
+            "description": "Subscription topic",
+            "type": "string"
+          }
+        },
+        "example": {
+          "topic": "/my/test/topic"
+        }
+      },
+      "response": {
+        "payload": {
+          "type": "object",
+          "properties": {
+            "count": {
+              "description": "Broker subscription count",
+              "type": "integer"
+            }
+          },
+          "example": {
+            "count": 0
+          }
+        }
+      }
+    },
+    "/mcafee/service/dxl/brokerregistry/query": {
+      "description": "Queries the broker registry for broker state information. If no broker is specified returns the current state of all brokers.",
+      "payload": {
+        "type": "object",
+        "properties": {
+          "brokerGuid": {
+            "description": "Broker GUID",
+            "type": "string"
+          }
+        },
+        "example": {
+          "brokerGuid": "{0f41d474-95d7-11e8-1a8f-00155d842e2d}"
+        }
+      },
+      "response": {
+        "payload": {
+          "type": "object",
+          "properties": {
+            "brokers": {
+              "additionalProperties": {
+                "$ref": "#/definitions/BrokerStateEvent"
+              }
+            }
+          },
+          "example": {
+            "brokers": {
+              "{0f41d474-95d7-11e8-1a8f-00155d842e2d}": {
+                "bridgeChildren": [],
+                "bridges": [],
+                "connectionLimit": 50000,
+                "epoName": "MY-EPO1",
+                "guid": "{0f41d474-95d7-11e8-1a8f-00155d842e2d}",
+                "hostname": "my-broker1",
+                "policyHostname": "my-broker1",
+                "policyHub": "",
+                "policyIpAddress": "10.0.0.1",
+                "policyPort": 8883,
+                "port": 8883,
+                "startTime": 1537401471,
+                "topicRouting": true,
+                "ttlMins": 60,
+                "version": "5.0.0.289"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mcafee/service/dxl/clientregistry/query": {
+      "description": "Queries all brokers to determine if the specified client GUID is connected. This request will reach all brokers on the fabric unless the destinationBrokerGuids in the message are specified.",
+      "payload": {
+        "type": "object",
+        "required": [
+          "clientGuid"
+        ],
+        "properties": {
+          "clientGuid": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "clientGuid": "{ede89c16-dd10-404d-aad1-ea0e63a382fb}"
+        }
+      },
+      "response": {
+        "description": "If no client is connected for the supplied clientGuid, no response is returned. If a client is connected for the supplied clientGuid, an empty response is returned from the broker that is currently connected to the client.",
+        "payload": {
+          "example": {}
+        }
+      }
+    },
+    "/mcafee/service/dxl/svcregistry/query": {
+      "description": "Queries the Service Registry for all services matching the given serviceType or serviceGuid.",
+      "payload": {
+        "type": "object",
+        "properties": {
+          "serviceGuid": {
+            "description": "Service GUID",
+            "type": "string"
+          },
+          "serviceType": {
+            "description": "Service type",
+            "type": "string"
+          }
+        },
+        "example": {
+          "serviceType": "/my/service/service1",
+          "serviceGuid": "{ed468d60-4ddc-4f56-99ae-ca436980a35b}"
+        }
+      },
+      "response": {
+        "payload": {
+          "type": "object",
+          "properties": {
+            "services": {
+              "type": "object",
+              "additionalProperties": {
+                "allOf": [
+                  {
+                    "$ref": "#/definitions/ServiceRegistryRegisterEvent"
+                  }
+                ],
+                "properties": {
+                  "local": {
+                    "description": "Whether the service is local to this broker",
+                    "type": "boolean"
+                  },
+                  "unauthorizedChannels": {
+                    "description": "Unauthorized channels for service",
+                    "$ref": "https://opendxl.github.io/opendxl-api-specification/v0.1/schema.json#/definitions/stringArray"
+                  }
+                }
+              }
+            }
+          },
+          "example": {
+            "services": {
+              "{92240a29-2c76-41b2-a3dd-89ef6ff1dcf1}": {
+                "brokerGuid": "c75cb962-6928-4894-bf83-d6ce9ad36306",
+                "certificates": [
+                  "7c357987eabc9dd88481b35297f9e425cd433799",
+                  "84841b6fd81483746dc7390e8e44dfa4c86e1ba8"
+                ],
+                "clientGuid": "{7760a256-68f0-4075-bf6f-52d603367642}",
+                "local": true,
+                "managed": false,
+                "metaData": {},
+                "registrationTime": 1539636395,
+                "requestChannels": [
+                  "/my/service/service1/host_lookup"
+                ],
+                "serviceGuid": "{92240a29-2c76-41b2-a3dd-89ef6ff1dcf1}",
+                "serviceType": "/my/service/service1",
+                "ttlMins": 60,
+                "unauthorizedChannels": []
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mcafee/service/dxl/svcregistry/register": {
+      "description": "Registers a service with the Service Registry. This is called both at initial registration and re-registration before the specified ttlMins is reached.",
+      "payload": {
+        "$ref": "#/definitions/ServiceRegistryRegisterEvent",
+        "example": {
+          "clientGuid": "{e834986f-4e14-44d9-979a-acc35512c894}",
+          "metaData": {},
+          "registrationTime": 1539623701,
+          "requestChannels": [
+            "/isecg/sample/basicservice"
+          ],
+          "serviceGuid": "{3614fef1-635d-456d-82ce-57c165e0b326}",
+          "serviceType": "myService",
+          "ttlMins": 60
+        }
+      },
+      "response": {
+        "payload": {
+          "example": {}
+        }
+      }
+    },
+    "/mcafee/service/dxl/svcregistry/unregister": {
+      "description": "Unregisters a service with the Service Registry",
+      "payload": {
+        "type": "object",
+        "properties": {
+          "serviceGuid": {
+            "description": "Service GUID",
+            "type": "string"
+          }
+        },
+        "example": {
+          "serviceGuid": "{3614fef1-635d-456d-82ce-57c165e0b326}"
+        }
+      },
+      "response": {
+        "payload": {
+          "example": {}
+        }
+      }
+    }
+  },
+  "definitions": {
+    "BrokerStateEvent": {
+      "type": "object",
+      "properties": {
+        "bridgeChildren": {
+          "description": "Broker parents",
+          "$ref": "https://opendxl.github.io/opendxl-api-specification/v0.1/schema.json#/definitions/stringArray"
+        },
+        "bridges": {
+          "description": "All current Broker bridges",
+          "$ref": "https://opendxl.github.io/opendxl-api-specification/v0.1/schema.json#/definitions/stringArray"
+        },
+        "connectionLimit": {
+          "description": "Broker connection limit",
+          "type": "integer"
+        },
+        "epoName": {
+          "description": "Managing ePO name",
+          "type": "string"
+        },
+        "guid": {
+          "description": "Broker GUID",
+          "type": "string"
+        },
+        "hostname": {
+          "description": "Broker hostname",
+          "type": "string"
+        },
+        "policyHostname": {
+          "description": "Broker host name (via policy)",
+          "type": "string"
+        },
+        "policyHub": {
+          "description": "Broker hub name (via policy)",
+          "type": "string"
+        },
+        "policyIpAddress": {
+          "description": "Broker IP address (via policy)",
+          "type": "string"
+        },
+        "policyPort": {
+          "description": "Broker port (via policy)",
+          "type": "integer"
+        },
+        "port": {
+          "description": "Broker port",
+          "type": "integer"
+        },
+        "startTime": {
+          "description": "Broker start time (as seconds from epoch)",
+          "type": "integer"
+        },
+        "topicRouting": {
+          "description": "Whether topic-based routing is enabled",
+          "type": "boolean"
+        },
+        "ttlMins": {
+          "description": "Broker Time to Live (in minutes)",
+          "type": "integer"
+        },
+        "version": {
+          "description": "Broker version",
+          "type": "string"
+        }
+      },
+      "example": {
+        "bridges":[
+          "{32cd9168-338f-11e4-0d01-005056946833}"
+        ],
+        "bridgeChildren": [
+          "{ced54d6f-111d-6ba9-1f2f-192738cba23c}"
+        ],
+        "connectionLimit": 20000,
+        "guid":"{a0430b86-347a-17e4-0c52-0050569430aa}",
+        "hostname":"testHostname",
+        "port":8883,
+        "startTime": 1546903181,
+        "topicRouting": false,
+        "ttlMins":60,
+        "version": "0.1"
+      }
+    },
+    "IpeHealthPayload": {
+      "type": "object",
+      "additionalProperties": {
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "description": "The display name of the IPE object (fabric, pattern, or object)."
+          },
+          "properties": {
+            "$ref": "#/definitions/IpeHealthPayloadProperties"
+          }
+        }
+      }
+    },
+    "IpeHealthPayloadProperties": {
+      "type": "object",
+      "additionalProperties": {
+        "properties": {
+          "properties": {
+            "type": "object",
+            "properties": {
+              "displayName": {
+                "type": "string",
+                "description": "The display name for the property."
+              },
+              "value": {
+                "type": "string",
+                "description": "The value of the property."
+              },
+              "type": {
+                "type": "string",
+                "description": "The data type of the property."
+              }
+            }
+          }
+        }
+      }
+    },
+    "ServiceRegistryRegisterEvent": {
+      "type": "object",
+      "properties": {
+        "brokerGuid": {
+          "description": "Broker GUID",
+          "type": "string"
+        },
+        "certificates": {
+          "description": "Certificates of the client that registered this service",
+          "$ref": "https://opendxl.github.io/opendxl-api-specification/v0.1/schema.json#/definitions/stringArray"
+        },
+        "clientGuid": {
+          "description": "Client GUID",
+          "type": "string"
+        },
+        "clientInstanceGuid": {
+          "description": "Client instance GUID",
+          "type": "string"
+        },
+        "clientTenantGuid": {
+          "description": "Tenant GUID of the client that registered the service",
+          "type": "string"
+        },
+        "metaData": {
+          "description": "Service metadata",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "managed": {
+          "description": "Whether the service is associated with a managed client",
+          "type": "boolean"
+        },
+        "requestChannels": {
+          "description": "Service request channels",
+          "$ref": "https://opendxl.github.io/opendxl-api-specification/v0.1/schema.json#/definitions/stringArray"
+        },
+        "registrationTime": {
+          "description": "Registration time (as seconds from epoch)",
+          "type": "integer"
+        },
+        "serviceType": {
+          "description": "Service type",
+          "type": "string"
+        },
+        "serviceGuid": {
+          "description": "Service GUID",
+          "type": "string"
+        },
+        "targetTenantGuids": {
+          "description": "GUIDs of tenants that can access this service",
+          "$ref": "https://opendxl.github.io/opendxl-api-specification/v0.1/schema.json#/definitions/stringArray"
+        },
+        "ttlMins": {
+          "description": "Service Time to Live (in minutes)",
+          "type": "integer"
+        }
+      },
+      "example": {
+        "brokerGuid": "{da5d90d2-bcf4-11e8-0b38-0050569a0c70}",
+        "certificates": [],
+        "clientGuid": "{46e20115-18e9-4b0e-aa30-33ca595abdac}",
+        "clientInstanceGuid": "{46e20115-18e9-4b0e-aa30-33ca595abdac}:b918716c-3f73-4e3e-8292-91cfdc2500d9",
+        "managed": true,
+        "metaData": {
+          "name1": "test1",
+          "name2": "test2"
+        },
+        "registrationTime": 1546909846,
+        "requestChannels": [
+          "/mcafee/service/sample/file/request",
+          "/mcafee/service/sample/cert/request"
+        ],
+        "serviceGuid": "{d57f495c-7bed-4170-9970-61d10914335a}",
+        "serviceType": "/mcafee/service/sample",
+        "ttlMins": 60
+      }
+    }
+  }
+}
