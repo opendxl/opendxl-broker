@@ -181,7 +181,8 @@
         "description": "List of certificate data (1 certificate per line)",
         "type": "string",
         "example": "84841b6fd81483746dc7390e8e44dfa4c86e1ba8"
-      }
+      },
+      "isIncoming": true
     },
     "/mcafee/event/dxl/svcregistry/register": {
       "description": "Event used to notify subscribers that a service has been registered.",
