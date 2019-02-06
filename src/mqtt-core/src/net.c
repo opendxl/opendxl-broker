@@ -453,6 +453,8 @@ int mqtt3_socket_listen(struct _mqtt3_listener *listener)
             ssl_options |= SSL_OP_CIPHER_SERVER_PREFERENCE;
 #endif
             SSL_CTX_set_options(listener->ssl_ctx, ssl_options);
+            // Disable caching of sessions (DXL)
+            SSL_CTX_set_session_cache_mode(listener->ssl_ctx, SSL_SESS_CACHE_OFF);
 
 #ifdef SSL_MODE_RELEASE_BUFFERS
             /* Use even less memory per SSL connection. */

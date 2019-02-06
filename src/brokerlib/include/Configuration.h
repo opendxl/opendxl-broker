@@ -14,6 +14,7 @@
 #include <vector>
 #include <stdexcept>
 #include "StringUtil.h"
+#include <boost/algorithm/string.hpp>
 
 namespace dxl {
 namespace broker {
@@ -173,6 +174,8 @@ protected:
 
         std::string name = line.substr( 0, nameEnd );
         std::string value = line.substr( valueStart );
+        boost::trim( name );
+        boost::trim( value );
         setProperty( name, value );
     }
 
