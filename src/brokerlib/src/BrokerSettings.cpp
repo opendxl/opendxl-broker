@@ -16,6 +16,9 @@ using namespace dxl::broker;
 // GUID
 string BrokerSettings::sm_guid;
 
+// Instance GUID
+string BrokerSettings::sm_instanceGuid;
+
 // Tenant GUID
 string BrokerSettings::sm_tenantGuid;
 
@@ -152,6 +155,35 @@ const char* BrokerSettings::getGuid( bool throwException )
 }
 
 /** {@inheritDoc} */
+const char* BrokerSettings::getInstanceGuid( bool throwException )
+{
+	if( sm_instanceGuid.empty() )
+	{
+		if( throwException )
+		{
+			throw runtime_error( "Broker instance identifier has not been set" );
+		}
+		else
+		{
+			return NULL;
+		}
+	}
+
+	return sm_instanceGuid.c_str();
+}
+
+/** {@inheritDoc} */
+void BrokerSettings::resetInstanceGuid()
+{
+    sm_instanceGuid = sm_guid;
+    if( !sm_instanceGuid.empty() )
+    {
+        sm_instanceGuid.append( ":" );
+        sm_instanceGuid.append( sm_guid );
+    }
+}
+
+/** {@inheritDoc} */
 const char* BrokerSettings::getTenantGuid( bool throwException )
 {
     if( sm_tenantGuid.empty() )
@@ -234,7 +266,8 @@ void BrokerSettings::setValuesFromConfig( const Configuration& config )
     string strValue;
 
     // Broker identifier
-    config.getProperty( "brokerId", sm_guid, "" );
+    config.getProperty( "brokerId", strValue, "" );
+    setGuid( strValue.c_str() );
 
     // Logging
     config.getProperty( "logFile", sm_logFilePath, "./dxlbroker.log" );

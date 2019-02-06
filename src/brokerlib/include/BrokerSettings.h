@@ -20,11 +20,11 @@ class BrokerSettings
 {    
 public:
     /**
-     * Sets the broker GUID
+     * Sets the broker GUID. It also automatically resets the instance GUID.
      *
      * @param   guid The broker GUID
      */
-    static void setGuid( const char* guid ) { sm_guid = guid; }
+    static void setGuid( const char* guid ) { sm_guid = guid; resetInstanceGuid(); }
 
     /**
      * Returns the broker GUID. If the broker GUID has not been set, an exception will be thrown.
@@ -33,6 +33,19 @@ public:
      * @return  The broker GUID. If the broker GUID has not been set, an exception will be thrown.
      */
     static const char* getGuid( bool throwException = true );
+
+    /**
+     * Returns the broker instance GUID. If the broker instance GUID has not been set, an exception will be thrown.
+     *
+     * @param	throwException Whether to throw an exception if the GUID has not been set
+     * @return	The broker instance GUID. If the broker instance GUID has not been set, an exception will be thrown.
+     */
+    static const char* getInstanceGuid( bool throwException = true );
+
+    /**
+     * Sets the broker instance GUID using the value that was set for broker GUID.
+     */
+    static void resetInstanceGuid();
 
     /**
      * Sets the broker tenant GUID
@@ -491,6 +504,8 @@ public:
 private:
     /** The broker GUID */
     static std::string sm_guid;
+    /** The broker instance GUID. It is essentially "<broker-guid>:<broker-guid>" */
+    static std::string sm_instanceGuid;
     /** The broker tenant GUID */
     static std::string sm_tenantGuid;
     /** The broker listen port */

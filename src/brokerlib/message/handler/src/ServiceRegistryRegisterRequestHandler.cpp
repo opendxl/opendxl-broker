@@ -43,7 +43,7 @@ bool ServiceRegistryRegisterRequestHandler::onStoreMessage(
             BrokerSettings::getGuid() : context->getCanonicalSourceId() ) );
     registerPayload.setClientInstanceGuid( 
         ( ( context->getContextFlags() & DXL_FLAG_LOCAL ) ?
-            BrokerSettings::getGuid() : context->getSourceId() ) );
+            BrokerSettings::getInstanceGuid() : context->getSourceId() ) );
     bool isManaged = (context->getContextFlags() & DXL_FLAG_MANAGED) != 0;
     registerPayload.setManagedClient( isManaged );
     if( !isManaged )

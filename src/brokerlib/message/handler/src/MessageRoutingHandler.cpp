@@ -97,7 +97,10 @@ bool MessageRoutingHandler::onInsertMessage(
                 ( destClientGuids->find( destId ) == destClientGuids->end() ) &&
                 ( destClientGuids->find( canonicalDestId ) == destClientGuids->end() ) &&
                 ( !( contextFlags & DXL_FLAG_LOCAL ) ||
-                  destClientGuids->find( BrokerSettings::getGuid() ) == destClientGuids->end() ) )
+                  ( destClientGuids->find( BrokerSettings::getGuid() ) == destClientGuids->end() &&
+                    destClientGuids->find( BrokerSettings::getInstanceGuid() ) == destClientGuids->end() )
+                )
+              ) 
             {
                 if( SL_LOG.isDebugEnabled() )
                 {
