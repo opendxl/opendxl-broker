@@ -17,7 +17,7 @@ before_install:
   - docker ps -a
 
 script:
-  - git clone https://github.com/opendxl/opendxl-client-java.git
+  - git clone --recursive https://github.com/opendxl/opendxl-client-java.git
   - cd opendxl-client-java
   - ./gradlew assemble
   - java -jar ./build/libs/dxlclient*all.jar provisionconfig clientconfig 127.0.0.1 client -u admin -p password
