@@ -18,11 +18,11 @@ RUN cd /tmp \
     && make \
     && make install
 
-# JsonCPP (1.6.0)
+# JsonCPP (1.8.4)
 RUN cd /tmp \
-    && wget https://github.com/open-source-parsers/jsoncpp/archive/1.6.0.tar.gz \
-    && tar xvfz 1.6.0.tar.gz \
-    && cd jsoncpp-1.6.0 \
+    && wget https://github.com/open-source-parsers/jsoncpp/archive/1.8.4.tar.gz \
+    && tar xvfz 1.8.4.tar.gz \
+    && cd jsoncpp-1.8.4 \
     && cmake -DCMAKE_BUILD_TYPE=release -DBUILD_STATIC_LIBS=ON -DBUILD_SHARED_LIBS=OFF \
         -DARCHIVE_INSTALL_DIR=/usr/local/lib -G "Unix Makefiles" \
     && make \
