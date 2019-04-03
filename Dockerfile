@@ -11,9 +11,9 @@ RUN apt-get update -y \
 
 # Message Pack
 RUN cd /tmp \
-    && wget https://github.com/msgpack/msgpack-c/archive/cpp-3.1.1.tar.gz \
-    && tar xvfz ./cpp-3.1.1.tar.gz \
-    && cd msgpack-c-cpp-3.1.1 \
+    && wget https://github.com/msgpack/msgpack-c/releases/download/cpp-3.1.1/msgpack-3.1.1.tar.gz \
+    && tar xvfz ./msgpack-3.1.1.tar.gz \
+    && cd msgpack-3.1.1 \
     && cmake . \
     && make \
     && make install
