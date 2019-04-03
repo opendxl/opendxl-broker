@@ -9,16 +9,16 @@ ARG build_docs=false
 RUN apt-get update -y \
     && apt-get install -y libssl1.0-dev libboost-dev cmake uuid-dev wget build-essential
 
-# Message Pack (0.5.8)
+# Message Pack
 RUN cd /tmp \
-    && wget https://github.com/msgpack/msgpack-c/releases/download/cpp-0.5.8/msgpack-0.5.8.tar.gz \
-    && tar xvfz ./msgpack-0.5.8.tar.gz \
-    && cd msgpack-0.5.8 \
-    && ./configure \
+    && wget https://github.com/msgpack/msgpack-c/archive/cpp-3.1.1.tar.gz \
+    && tar xvfz ./cpp-3.1.1.tar.gz \
+    && cd msgpack-c-cpp-3.1.1 \
+    && cmake . \
     && make \
     && make install
 
-# JsonCPP (1.8.4)
+# JsonCPP
 RUN cd /tmp \
     && wget https://github.com/open-source-parsers/jsoncpp/archive/1.8.4.tar.gz \
     && tar xvfz 1.8.4.tar.gz \
