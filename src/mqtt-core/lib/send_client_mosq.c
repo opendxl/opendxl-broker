@@ -65,6 +65,7 @@ int _mosquitto_send_connect(struct mosquitto *mosq, uint16_t keepalive, bool cle
 
     packet->command = CONNECT;
     packet->remaining_length = 12+payloadlen;
+    if(mosq->wsi) packet->is_ws_packet = 1;
     rc = _mosquitto_packet_alloc(packet);
     if(rc){
         _mosquitto_free(packet);
@@ -124,6 +125,7 @@ int _mosquitto_send_subscribe(struct mosquitto *mosq, int *mid, bool dup, const 
 
     packet->command = SUBSCRIBE | (dup<<3) | (1<<1);
     packet->remaining_length = packetlen;
+    if(mosq->wsi) packet->is_ws_packet = 1;
     rc = _mosquitto_packet_alloc(packet);
     if(rc){
         _mosquitto_free(packet);
@@ -165,6 +167,7 @@ int _mosquitto_send_unsubscribe(struct mosquitto *mosq, int *mid, bool dup, cons
 
     packet->command = UNSUBSCRIBE | (dup<<3) | (1<<1);
     packet->remaining_length = packetlen;
+    if(mosq->wsi) packet->is_ws_packet = 1;
     rc = _mosquitto_packet_alloc(packet);
     if(rc){
         _mosquitto_free(packet);

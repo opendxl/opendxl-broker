@@ -94,7 +94,7 @@ int _mosquitto_send_publish(struct mosquitto *mosq, uint16_t mid, const char *to
     assert(mosq);
     assert(topic);
 
-    if(mosq->sock == INVALID_SOCKET) return MOSQ_ERR_NO_CONN;
+    if(IS_CONTEXT_INVALID(mosq)) return MOSQ_ERR_NO_CONN;
     if(mosq->bridge && mosq->bridge->topics && mosq->bridge->topic_remapping){
         for(i=0; i<mosq->bridge->topic_count; i++){
             cur_topic = &mosq->bridge->topics[i];
@@ -183,6 +183,7 @@ int _mosquitto_send_command_with_mid(struct mosquitto *mosq, uint8_t command, ui
         packet->command |= 8;
     }
     packet->remaining_length = 2;
+    if(mosq->wsi) packet->is_ws_packet = 1;
     rc = _mosquitto_packet_alloc(packet);
     if(rc){
         _mosquitto_free(packet);
@@ -208,6 +209,7 @@ int _mosquitto_send_simple_command(struct mosquitto *mosq, uint8_t command)
     packet->command = command;
     packet->remaining_length = 0;
 
+    if(mosq->wsi) packet->is_ws_packet = 1;
     rc = _mosquitto_packet_alloc(packet);
     if(rc){
         _mosquitto_free(packet);
@@ -235,6 +237,7 @@ int _mosquitto_send_real_publish(struct mosquitto *mosq, uint16_t mid, const cha
     packet->mid = mid;
     packet->command = PUBLISH | ((dup&0x1)<<3) | (qos<<1) | (retain ? 1 : 0);
     packet->remaining_length = packetlen;
+    if(mosq->wsi) packet->is_ws_packet = 1;
     rc = _mosquitto_packet_alloc(packet);
     if(rc){
         _mosquitto_free(packet);

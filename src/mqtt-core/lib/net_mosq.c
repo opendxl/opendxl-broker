@@ -75,6 +75,9 @@ POSSIBILITY OF SUCH DAMAGE.
 
 int tls_ex_index_mosq = -1;
 
+// Size of extra buffer that LWS requires prior to user data buffer.
+extern int g_ws_pre_buffer_size;
+
 void _mosquitto_net_init(void)
 {
 
@@ -124,9 +127,15 @@ void _mosquitto_packet_cleanup(struct _mosquitto_packet *packet)
     packet->have_remaining = 0;
     packet->remaining_count = 0;
     packet->remaining_mult = 1;
-    packet->remaining_length = 0;
-    if(packet->payload) _mosquitto_free(packet->payload);
-    packet->payload = NULL;
+    packet->remaining_length = 0;    
+    if(packet->payload) {
+        if(packet->is_ws_packet){
+            // Reset buffer to the original allocated value.
+            packet->payload = packet->payload - g_ws_pre_buffer_size;
+        }
+        _mosquitto_free(packet->payload);
+        packet->payload = NULL;
+    }
     packet->to_process = 0;
     packet->pos = 0;
 }
@@ -151,6 +160,14 @@ int _mosquitto_packet_queue(struct mosquitto *mosq, struct _mosquitto_packet *pa
     mosq->packet_count++;
 #endif
 
+    if(mosq->wsi){
+        // For websockets, we can only write from LWS callbacks.
+        // So, request for one.
+        mosquitto_ws_request_writeable_callback(mosq);
+        //lws_service_fd(lws_ctx, &p);
+        return 0;
+    }
+
     return _mosquitto_packet_write(mosq);
 }
 
@@ -163,6 +180,14 @@ int _mosquitto_socket_close(struct mosquitto *mosq)
     int rc = 0;
 
     assert(mosq);
+    if(mosq->wsi){        
+        // LWS does not provide a way to close the client socket from the server side.
+        // So, set the state as dead in the context and request for callback.
+        // In the callback, return an error to close the connection.
+        mosq->state = mosq_cs_ws_dead;
+        mosquitto_ws_request_writeable_callback(mosq);
+        return rc;
+    }
     if(mosq->ssl){
         // DXL Start
         if(!SSL_in_init(mosq->ssl)){
@@ -615,7 +640,7 @@ int _mosquitto_packet_write(struct mosquitto *mosq)
     struct _mosquitto_packet *packet;
 
     if(!mosq) return MOSQ_ERR_INVAL;
-    if(mosq->sock == INVALID_SOCKET) return MOSQ_ERR_NO_CONN;
+    if(IS_CONTEXT_INVALID(mosq)) return MOSQ_ERR_NO_CONN;
 
     if(mosq->out_packet && !mosq->current_out_packet){
         mosq->current_out_packet = mosq->out_packet;
@@ -630,11 +655,43 @@ int _mosquitto_packet_write(struct mosquitto *mosq)
 
 
         while(packet->to_process > 0){
-            write_length = _mosquitto_net_write(mosq, &(packet->payload[packet->pos]), packet->to_process);
+            if(mosq->wsi){
+                write_length = mosquitto_ws_write(mosq, &(packet->payload[packet->pos]), packet->to_process);
+            }
+            else{
+                write_length = _mosquitto_net_write(mosq, &(packet->payload[packet->pos]), packet->to_process);
+            }
+
             if(write_length > 0){
-                packet->to_process -= write_length;
-                packet->pos += write_length;
-            }else{
+                if(mosq->wsi) {                    
+                    // LWS will internally buffer any data that is not sent and retry sending it later.
+                    // So, advance the packet as though all data has been written.
+                    packet->pos += packet->to_process;
+                    packet->to_process = 0;
+                }
+                else{
+                    packet->to_process -= write_length;
+                    packet->pos += write_length;
+                }
+
+            }else{                
+                if(mosq->wsi){
+                    if(write_length == 0){
+                        // LWS internally buffered the data. So, advance the packet position.
+                        packet->pos += packet->to_process;
+                        packet->to_process = 0;
+
+                        // But, LWS could not write anymore and would have requested for POLLOUT. 
+                        // Stop trying for this iteration.
+                        return MOSQ_ERR_SUCCESS;
+                    }
+                    else{
+                        _mosquitto_log_printf(NULL, MOSQ_LOG_ERR,
+                            "[%p] lws_write failed. Return value [%d]", mosq->wsi, write_length);
+                        return MOSQ_ERR_ERRNO;
+                    }
+                }
+
                 if(errno == EAGAIN || errno == COMPAT_EWOULDBLOCK){
                     // Update context, will add EPOLLOUT if packets remain
                     mosquitto_update_context(mosq->numericId, mosq);
@@ -671,61 +728,55 @@ int _mosquitto_packet_write(struct mosquitto *mosq)
     return MOSQ_ERR_SUCCESS;
 }
 
-int _mosquitto_packet_read(struct mosquitto_db *db, struct mosquitto *mosq)
+int _mosquitto_packet_read(struct mosquitto_db *db, struct mosquitto *mosq,
+                           uint8_t* ws_buf, uint32_t ws_len)
 {
-    uint8_t byte;
-    ssize_t read_length;
+    uint32_t ws_pos = 0;
     int rc = 0;
 
     if(!mosq) return MOSQ_ERR_INVAL;
-    if(mosq->sock == INVALID_SOCKET) return MOSQ_ERR_NO_CONN;
-    /* This gets called if pselect() indicates that there is network data
-     * available - ie. at least one byte.  What we do depends on what data we
-     * already have.
-     * If we've not got a command, attempt to read one and save it. This should
-     * always work because it's only a single byte.
-     * Then try to read the remaining length. This may fail because it is may
-     * be more than one byte - will need to save data pending next read if it
-     * does fail.
-     * Then try to read the remaining payload, where 'payload' here means the
-     * combined variable header and actual payload. This is the most likely to
-     * fail due to longer length, so save current data and current position.
-     * After all data is read, send to _mosquitto_handle_packet() to deal with.
-     * Finally, free the memory and reset everything to starting conditions.
-     */
-    if(!mosq->in_packet.command){
-        read_length = _mosquitto_net_read(mosq, &byte, 1);
-        if(read_length == 1){
-            mosq->in_packet.command = byte;
+    if(IS_CONTEXT_INVALID(mosq)) return MOSQ_ERR_NO_CONN;
 
-            /* Clients must send CONNECT as their first command. */
-            if(!(mosq->bridge) && mosq->state == mosq_cs_new && (byte&0xF0) != CONNECT) return MOSQ_ERR_PROTOCOL;
-        }else{
-            if(read_length == 0) return MOSQ_ERR_CONN_LOST; /* EOF */
-            if(errno == EAGAIN || errno == COMPAT_EWOULDBLOCK){
-                return MOSQ_ERR_SUCCESS;
-            }else{
-                switch(errno){
-                    case COMPAT_ECONNRESET:
-                        return MOSQ_ERR_CONN_LOST;
-                    default:
-                        return MOSQ_ERR_ERRNO;
+    do{
+        uint8_t byte;
+        ssize_t read_length;    
+        rc = 0;
+
+        /* This gets called if pselect() indicates that there is network data
+         * available - ie. at least one byte.  What we do depends on what data we
+         * already have.
+         * If we've not got a command, attempt to read one and save it. This should
+         * always work because it's only a single byte.
+         * Then try to read the remaining length. This may fail because it is may
+         * be more than one byte - will need to save data pending next read if it
+         * does fail.
+         * Then try to read the remaining payload, where 'payload' here means the
+         * combined variable header and actual payload. This is the most likely to
+         * fail due to longer length, so save current data and current position.
+         * After all data is read, send to _mosquitto_handle_packet() to deal with.
+         * Finally, free the memory and reset everything to starting conditions.
+         */
+        if(!mosq->in_packet.command){
+            if(ws_buf){
+                if(ws_pos < ws_len){
+                    byte = ws_buf[ws_pos++];
+                    read_length = 1;                
+                }
+                else{
+                    // No more data available.
+                    read_length = -1;
+                    errno = EAGAIN;
                 }
             }
-        }
-    }
-    if(!mosq->in_packet.have_remaining){
-        do{
-            read_length = _mosquitto_net_read(mosq, &byte, 1);
-            if(read_length == 1){
-                mosq->in_packet.remaining_count++;
-                /* Max 4 bytes length for remaining length as defined by protocol.
-                 * Anything more likely means a broken/malicious client.
-                 */
-                if(mosq->in_packet.remaining_count > 4) return MOSQ_ERR_PROTOCOL;
+            else{
+                read_length = _mosquitto_net_read(mosq, &byte, 1);
+            }
 
-                mosq->in_packet.remaining_length += (byte & 127) * mosq->in_packet.remaining_mult;
-                mosq->in_packet.remaining_mult *= 128;
+            if(read_length == 1){
+                mosq->in_packet.command = byte;
+
+                /* Clients must send CONNECT as their first command. */
+                if(!(mosq->bridge) && mosq->state == mosq_cs_new && (byte&0xF0) != CONNECT) return MOSQ_ERR_PROTOCOL;
             }else{
                 if(read_length == 0) return MOSQ_ERR_CONN_LOST; /* EOF */
                 if(errno == EAGAIN || errno == COMPAT_EWOULDBLOCK){
@@ -739,65 +790,132 @@ int _mosquitto_packet_read(struct mosquitto_db *db, struct mosquitto *mosq)
                     }
                 }
             }
-        }while((byte & 128) != 0);
-
-        // DXL Begin
-        uint32_t payloadLen = mosq->in_packet.remaining_length;
-
-        // Disconnect if payload length exceeds maximum or
-        // The count of sent bytes exceeds the limit for the client
-        if((((mosq->in_packet.command)&0xF0)!=CONNECT) && (
-            (db->config->message_size_limit && (payloadLen > (uint32_t)db->config->message_size_limit )) ||            
-            dxl_update_sent_byte_count(mosq, mosq->in_packet.remaining_length)))
-        {
-            mqtt3_context_disconnect(db, mosq);
         }
-        // DXL End
-
-        if(mosq->in_packet.remaining_length > 0){
-            mosq->in_packet.payload = (uint8_t *)_mosquitto_malloc(mosq->in_packet.remaining_length*sizeof(uint8_t));
-            if(!mosq->in_packet.payload) return MOSQ_ERR_NOMEM;
-            mosq->in_packet.to_process = mosq->in_packet.remaining_length;
-        }
-        mosq->in_packet.have_remaining = 1;
-    }
-    while(mosq->in_packet.to_process>0){
-        read_length = _mosquitto_net_read(mosq,
-                        &(mosq->in_packet.payload[mosq->in_packet.pos]), mosq->in_packet.to_process);
-        if(read_length > 0){
-            mosq->in_packet.to_process -= read_length;
-            mosq->in_packet.pos += read_length;
-        }else{
-            if(errno == EAGAIN || errno == COMPAT_EWOULDBLOCK){
-                if(mosq->in_packet.to_process > 1000){
-                    /* Update last_msg_in time if more than 1000 bytes left to
-                     * receive. Helps when receiving large messages.
-                     * This is an arbitrary limit, but with some consideration.
-                     * If a client can't send 1000 bytes in a second it
-                     * probably shouldn't be using a 1 second keep alive. */
-                    mosq->last_msg_in = mosquitto_time();
+        if(!mosq->in_packet.have_remaining){
+            do{
+                if(ws_buf){
+                    if(ws_pos < ws_len){
+                        byte = ws_buf[ws_pos++];
+                        read_length = 1;                
+                    }
+                    else{
+                        // No more data available.
+                        read_length = -1;
+                        errno = EAGAIN;
+                    }
                 }
-                return MOSQ_ERR_SUCCESS;
+                else{
+                    read_length = _mosquitto_net_read(mosq, &byte, 1);
+                }
+
+                if(read_length == 1){
+                    mosq->in_packet.remaining_count++;
+                    /* Max 4 bytes length for remaining length as defined by protocol.
+                     * Anything more likely means a broken/malicious client.
+                     */
+                    if(mosq->in_packet.remaining_count > 4) return MOSQ_ERR_PROTOCOL;
+
+                    mosq->in_packet.remaining_length += (byte & 127) * mosq->in_packet.remaining_mult;
+                    mosq->in_packet.remaining_mult *= 128;
+                }else{
+                    if(read_length == 0) return MOSQ_ERR_CONN_LOST; /* EOF */
+                    if(errno == EAGAIN || errno == COMPAT_EWOULDBLOCK){
+                        return MOSQ_ERR_SUCCESS;
+                    }else{
+                        switch(errno){
+                            case COMPAT_ECONNRESET:
+                                return MOSQ_ERR_CONN_LOST;
+                            default:
+                                return MOSQ_ERR_ERRNO;
+                        }
+                    }
+                }
+            }while((byte & 128) != 0);
+
+            // DXL Begin
+            uint32_t payloadLen = mosq->in_packet.remaining_length;
+
+            // Disconnect if payload length exceeds maximum or
+            // The count of sent bytes exceeds the limit for the client
+            if((((mosq->in_packet.command)&0xF0)!=CONNECT) && (
+                (db->config->message_size_limit && (payloadLen > (uint32_t)db->config->message_size_limit )) ||            
+                dxl_update_sent_byte_count(mosq, mosq->in_packet.remaining_length)))
+            {
+                mqtt3_context_disconnect(db, mosq);
+            }
+            // DXL End
+
+            if(mosq->in_packet.remaining_length > 0){
+                mosq->in_packet.payload = (uint8_t *)_mosquitto_malloc(mosq->in_packet.remaining_length*sizeof(uint8_t));
+                if(!mosq->in_packet.payload) return MOSQ_ERR_NOMEM;
+                mosq->in_packet.to_process = mosq->in_packet.remaining_length;
+            }
+            mosq->in_packet.have_remaining = 1;
+        }
+        while(mosq->in_packet.to_process>0){
+
+            if(ws_buf){
+                if(ws_pos < ws_len){
+                    if(ws_pos + mosq->in_packet.to_process < ws_len){
+                        read_length = mosq->in_packet.to_process;
+                        memcpy(&(mosq->in_packet.payload[mosq->in_packet.pos]), &(ws_buf[ws_pos]), read_length);
+                        ws_pos = ws_pos + read_length;
+                    }
+                    else{
+                        read_length = ws_len - ws_pos;
+                        memcpy(&(mosq->in_packet.payload[mosq->in_packet.pos]), &(ws_buf[ws_pos]), read_length);
+                        ws_pos = ws_len;
+                    }
+                }
+                else{
+                    // No more data available.
+                    read_length = -1;
+                    errno = EAGAIN;
+                }
+            }
+            else{
+                read_length = _mosquitto_net_read(
+                        mosq, 
+                        &(mosq->in_packet.payload[mosq->in_packet.pos]), 
+                        mosq->in_packet.to_process);
+            }
+            if(read_length > 0){
+                mosq->in_packet.to_process -= read_length;
+                mosq->in_packet.pos += read_length;
             }else{
-                switch(errno){
-                    case COMPAT_ECONNRESET:
-                        return MOSQ_ERR_CONN_LOST;
-                    default:
-                        return MOSQ_ERR_ERRNO;
+                if(errno == EAGAIN || errno == COMPAT_EWOULDBLOCK){
+                    if(mosq->in_packet.to_process > 1000){
+                        /* Update last_msg_in time if more than 1000 bytes left to
+                         * receive. Helps when receiving large messages.
+                         * This is an arbitrary limit, but with some consideration.
+                         * If a client can't send 1000 bytes in a second it
+                         * probably shouldn't be using a 1 second keep alive. */
+                        mosq->last_msg_in = mosquitto_time();
+                    }
+                    return MOSQ_ERR_SUCCESS;
+                }else{
+                    switch(errno){
+                        case COMPAT_ECONNRESET:
+                            return MOSQ_ERR_CONN_LOST;
+                        default:
+                            return MOSQ_ERR_ERRNO;
+                    }
                 }
             }
         }
+
+
+        /* All data for this packet is read. */
+        mosq->in_packet.pos = 0;
+        rc = mqtt3_packet_handle(db, mosq);
+
+        /* Free data and reset values */
+        _mosquitto_packet_cleanup(&mosq->in_packet);
+
+        mosq->last_msg_in = mosquitto_time();
     }
-
-
-    /* All data for this packet is read. */
-    mosq->in_packet.pos = 0;
-    rc = mqtt3_packet_handle(db, mosq);
-
-    /* Free data and reset values */
-    _mosquitto_packet_cleanup(&mosq->in_packet);
-
-    mosq->last_msg_in = mosquitto_time();
+    while(ws_buf && (ws_pos < ws_len)); // For websockets, the supplied buffer can have more than one packet. 
+                                        // So, loop again for any remaining data in the buffer. 
     return rc;
 }
 

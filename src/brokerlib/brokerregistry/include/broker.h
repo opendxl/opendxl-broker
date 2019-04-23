@@ -15,7 +15,9 @@ namespace broker {
 namespace registry
 {
     /** Default Time to Live */
-    const uint32_t DEFAULTTTL = 60;        
+    const uint32_t DEFAULTTTL = 60;
+    /** Default WebSocket port */
+    const uint32_t DEFAULTWEBSOCKETPORT = 443;
 }
 
 /**
@@ -40,6 +42,7 @@ public:
      * @param   policyIpAddress The IP address as reported in policy
      * @param   policyHubName The hub name as reported in policy
      * @param   policyPort The port as reported in policy
+     * @param   webSocketPort The broker's WebSocket port
      * @param   brokerVersion The version of the broker
      * @param   connectionLimit The connection limit for the broker
      * @param   topicRoutingEnabled Whether topic routing is enabled
@@ -47,13 +50,14 @@ public:
     explicit Broker(
         const std::string& brokerId = "",
         const std::string& hostname = "",
-        uint32_t port = DEFAULTPORT, 
+        uint32_t port = DEFAULTPORT,
         uint32_t ttl = registry::DEFAULTTTL, 
         uint32_t startTime = 0,
         const std::string& policyHostname = "",
         const std::string& policyIpAddress = "",
         const std::string& policyHubName = "",
         uint32_t policyPort = DEFAULTPORT,
+        uint32_t webSocketPort = registry::DEFAULTWEBSOCKETPORT,
         const std::string& brokerVersion = "",
         uint32_t connectionLimit = DEFAULTCONNLIMIT,
         bool topicRoutingEnabled = false );
@@ -157,6 +161,20 @@ public:
     void setPolicyPort( uint32_t port ) { m_policyPort = port; }
 
     /**
+     * Returns the broker's WebSocket port
+     *
+     * @return  The broker's WebSocket port
+     */
+    uint32_t getWebSocketPort() const;
+
+    /**
+     * Sets the broker's WebSocket port
+     *
+     * @param   port The broker's WebSocket port
+     */
+    void setWebSocketPort( uint32_t webSocketPort ) { m_webSocketPort = webSocketPort; }
+
+    /**
      * Returns the broker's connection limit
      *
      * @return  The broker's connection limit
@@ -216,6 +234,8 @@ private:
     std::string m_policyHubName;
     /** Broker's port */
     uint32_t m_policyPort;
+    /** Broker's WebSocket port */
+    uint32_t m_webSocketPort;
     /** Broker's version */
     std::string m_brokerVersion;
     /** Managing ePO name */

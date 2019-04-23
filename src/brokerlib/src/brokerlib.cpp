@@ -204,6 +204,8 @@ static bool waitForBrokerCertificates()
  * @param   messageSizeLimit The core message size limit (out)
  * @param   user The user to run the broker as (out)
  * @param   brokerCertsUtHash List of broker certificate hashes (SHA-1) (out)
+ * @param   webSocketsEnabled Whether WebSockets is enabled (out)
+ * @param   webSocketsListenPort The broker WebSockets listen port (out)
  * @return  Whether Messaging core should continue starting
  */
 bool brokerlib_main( 
@@ -213,7 +215,8 @@ bool brokerlib_main(
     const char** brokerKeyFile, const char** brokerCertFile, const char** ciphers,
     uint64_t* maxPacketBufferSize, int* listenPort, int* coreLogType,
     int* messageSizeLimit, char **user,
-    struct cert_hashes** brokerCertsUtHash )
+    struct cert_hashes** brokerCertsUtHash,
+    bool *webSocketsEnabled, int* webSocketsListenPort )
 {
     bool succeeded = false;
     try 
@@ -345,6 +348,12 @@ bool brokerlib_main(
         // Set packet buffer size
         *maxPacketBufferSize = BrokerSettings::getMaxPacketBufferSize();
 
+        // Set whether WebSockets is enabled
+        *webSocketsEnabled = BrokerSettings::isWebSocketsEnabled();
+
+        // Set broker WebSockets listen port
+        *webSocketsListenPort = BrokerSettings::getWebSocketsListenPort();
+
         succeeded = true;
     } 
     catch( std::runtime_error& e ) 
@@ -387,7 +396,8 @@ bool init( CoreInterface* coreInterface )
             coreInterface->getBrokerHostname(),
             coreInterface->getBrokerPort(),
             BrokerSettings::getBrokerTtlMins(),
-            TimeUtil::getCurrentTimeSeconds() );
+            TimeUtil::getCurrentTimeSeconds(),
+            BrokerSettings::getWebSocketsListenPort() );
         coreInterface->addMaintenanceListener( &BrokerRegistry::getInstance() );
 
         // Register message handlers

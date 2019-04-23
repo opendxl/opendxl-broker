@@ -217,8 +217,9 @@ void BrokerRegistry::clearAllCaches()
 /** {@inheritDoc} */
 bool BrokerRegistry::addBroker(
     const std::string &brokerId, const std::string &hostname, uint32_t port, uint32_t ttl, 
-    uint32_t startTime, const std::string& policyHostname, const std::string& policyIpAddress,
-    const std::string& policyHubName, uint32_t policyPort, const std::string& brokerVersion,
+    uint32_t startTime, uint32_t webSocketPort, const std::string& policyHostname,
+    const std::string& policyIpAddress,const std::string& policyHubName, uint32_t policyPort,
+    const std::string& brokerVersion,
     uint32_t connectionLimit, bool topicRoutingEnabled )
 {
     bool retVal( false );
@@ -250,6 +251,7 @@ bool BrokerRegistry::addBroker(
             broker.setPolicyIpAddress( policyIpAddress );
             broker.setPolicyHubName( policyHubName );
             broker.setPolicyPort( policyPort );
+            broker.setWebSocketPort( webSocketPort );
             broker.setBrokerVersion( brokerVersion );
             broker.setConnectionLimit( connectionLimit );
             broker.setTopicRoutingEnabled( topicRoutingEnabled );
@@ -260,7 +262,7 @@ bool BrokerRegistry::addBroker(
             m_registry[brokerId] =
                 BrokerState(
                     Broker( brokerId, hostname, port, ttl, startTime, policyHostname,
-                        policyIpAddress, policyHubName, policyPort, brokerVersion,
+                        policyIpAddress, policyHubName, policyPort, webSocketPort, brokerVersion,
                         connectionLimit, topicRoutingEnabled ) );
 
             // Invalidate routing and topic caches
@@ -828,7 +830,7 @@ bool BrokerRegistry::isSubscriberInHierarchy(
 
 /** {@inheritDoc} */
 void BrokerRegistry::setLocalBrokerProperties( 
-    const string &hostName, const string& ipAddress, const string &hub, uint32_t port )
+    const string &hostName, const string& ipAddress, const string &hub, uint32_t port, uint32_t webSocketPort )
 {
     // Lock mutex
     lock_guard<mutex> lock( m_localBrokerPropsMutex );
@@ -837,6 +839,7 @@ void BrokerRegistry::setLocalBrokerProperties(
     m_localBrokerIpAddress = ipAddress;
     m_localBrokerHub = hub;
     m_localBrokerPort = port;
+    m_localBrokerWebSocketPort = webSocketPort;
 }
 
 /** {@inheritDoc} */
@@ -897,6 +900,15 @@ uint32_t BrokerRegistry::getLocalBrokerPort()
     lock_guard<mutex> lock( m_localBrokerPropsMutex );
 
     return m_localBrokerPort;
+}
+
+/** {@inheritDoc} */
+uint32_t BrokerRegistry::getLocalBrokerWebSocketPort()
+{
+    // Lock mutex
+    lock_guard<mutex> lock( m_localBrokerPropsMutex );
+
+    return m_localBrokerWebSocketPort;
 }
 
 /** {@inheritDoc} */

@@ -28,4 +28,4 @@ ifeq ($(UNAME),Linux)
 endif
 
 BROKER_LIBS:=$(BROKER_LIBS) -Wl,-rpath,'$$ORIGIN/../lib' -L${BROKERLIB_DIR} \
-	-lmsgpackc -ldxlbroker -lssl -ljsoncpp -luuid -lpthread -lssl -lcrypto
+	-lmsgpackc -ldxlbroker -lssl -ljsoncpp -luuid -lpthread -lssl -lcrypto -lwebsockets

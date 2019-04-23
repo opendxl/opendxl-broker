@@ -19,6 +19,7 @@ OBJS += \
 	search_optimization.o \
 	send_server.o \
 	subs.o \
+	ws.o \
 	../lib/memory_mosq.o \
 	../lib/net_mosq.o \
 	../lib/read_handle_shared.o \

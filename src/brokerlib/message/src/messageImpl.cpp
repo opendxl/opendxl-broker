@@ -9,6 +9,7 @@
 
 #include <uuid/uuid.h>
 
+
 /* All the messages are going to be promoted to this DXL message version. */
 #define DXL_MSG_VERSION 3
 
@@ -791,45 +792,47 @@ dxl_message_error_t dxlMessageToBytes( struct  dxl_message_context_t *context,
 {
     size_t i;
     size_t temp;
-    
+
     /* msgpack::sbuffer is a simple buffer implementation. */
-    msgpack_sbuffer buffer;
-    msgpack_sbuffer_init(&buffer);
+    msgpack_sbuffer simple_buffer;
+    msgpack_sbuffer *buffer = &simple_buffer;
+    msgpack_sbuffer_init(buffer);
 
     /* serialize values into the buffer using msgpack_sbuffer_write callback function. */
-    msgpack_packer pk;
-    msgpack_packer_init(&pk, &buffer, msgpack_sbuffer_write);    
+    msgpack_packer packer;
+    msgpack_packer *pk = &packer;
+    msgpack_packer_init(pk, buffer, msgpack_sbuffer_write);    
 
     ////////////////////////////////////////////////////////////////////////////
     // Version 0
     ////////////////////////////////////////////////////////////////////////////
 
     /* Pack version and type */
-    msgpack_pack_int32(&pk,message->version);
-    msgpack_pack_int8(&pk, (unsigned char)message->messageType);
+    msgpack_pack_int32(pk,message->version);
+    msgpack_pack_int8(pk, (unsigned char)message->messageType);
 
     /* Next comes message id */
     temp = strlen(message->messageId);
-    msgpack_pack_v4raw(&pk,temp);
-    msgpack_pack_v4raw_body(&pk,temp ? message->messageId : NULL, temp);
+    msgpack_pack_v4raw(pk,temp);
+    msgpack_pack_v4raw_body(pk,temp ? message->messageId : NULL, temp);
 
     /* client ID */
     temp = strlen(message->sourceClientId);
-    msgpack_pack_v4raw(&pk,temp);
-    msgpack_pack_v4raw_body(&pk,temp ? message->sourceClientId : NULL, temp);
+    msgpack_pack_v4raw(pk,temp);
+    msgpack_pack_v4raw_body(pk,temp ? message->sourceClientId : NULL, temp);
 
     /* source broker GUID */
     temp = strlen(message->sourceBrokerGuid);
-    msgpack_pack_v4raw(&pk,temp);
-    msgpack_pack_v4raw_body(&pk,temp ? message->sourceBrokerGuid : NULL, temp);
+    msgpack_pack_v4raw(pk,temp);
+    msgpack_pack_v4raw_body(pk,temp ? message->sourceBrokerGuid : NULL, temp);
 
     /* Broker GUIDs */
-    msgpack_pack_array(&pk, message->brokerGuidCount);
+    msgpack_pack_array(pk, message->brokerGuidCount);
     for( i = 0; i < message->brokerGuidCount; i++ )
     {
         temp = strlen(message->brokerGuids[i]);
-        msgpack_pack_v4raw(&pk, temp);
-        msgpack_pack_v4raw_body(&pk, message->brokerGuids[i], temp);
+        msgpack_pack_v4raw(pk, temp);
+        msgpack_pack_v4raw_body(pk, message->brokerGuids[i], temp);
     }
 
     /* Client GUIDs */
@@ -837,65 +840,65 @@ dxl_message_error_t dxlMessageToBytes( struct  dxl_message_context_t *context,
         context->logger_(context->cb_arg_,"Packing client guids");
     if( stripClientGuids )
     {
-        msgpack_pack_array(&pk, 0);
+        msgpack_pack_array(pk, 0);
     }
     else
     {
-        msgpack_pack_array(&pk, message->clientGuidCount);
+        msgpack_pack_array(pk, message->clientGuidCount);
         for( i = 0; i < message->clientGuidCount; i++ )
         {
             temp = strlen(message->clientGuids[i]);
-            msgpack_pack_v4raw(&pk, temp);
-            msgpack_pack_v4raw_body(&pk, message->clientGuids[i], temp);
+            msgpack_pack_v4raw(pk, temp);
+            msgpack_pack_v4raw_body(pk, message->clientGuids[i], temp);
         }
     }
 
     /* payload */
-    msgpack_pack_v4raw(&pk,message->payloadSize);
-    msgpack_pack_v4raw_body(&pk,message->payloadSize ? message->payload : NULL, message->payloadSize);
+    msgpack_pack_v4raw(pk,message->payloadSize);
+    msgpack_pack_v4raw_body(pk,message->payloadSize ? message->payload : NULL, message->payloadSize);
 
     /* And now message type specific stuff */
     if ( message->messageType == DXLMP_REQUEST )
     {
         temp = strlen(message->dxl_message_specificData.requestData->replyToTopic);
-        msgpack_pack_v4raw(&pk,temp);
-        msgpack_pack_v4raw_body(&pk,temp ? message->dxl_message_specificData.requestData->replyToTopic : NULL, temp);
+        msgpack_pack_v4raw(pk,temp);
+        msgpack_pack_v4raw_body(pk,temp ? message->dxl_message_specificData.requestData->replyToTopic : NULL, temp);
 
         temp = strlen(message->dxl_message_specificData.requestData->serviceInstanceId);
-        msgpack_pack_v4raw(&pk,temp);
-        msgpack_pack_v4raw_body(&pk,temp ? message->dxl_message_specificData.requestData->serviceInstanceId : NULL, temp);
+        msgpack_pack_v4raw(pk,temp);
+        msgpack_pack_v4raw_body(pk,temp ? message->dxl_message_specificData.requestData->serviceInstanceId : NULL, temp);
     }
     else if ( message->messageType == DXLMP_RESPONSE )
     {
         /* Request message ID */
         temp = strlen(message->dxl_message_specificData.responseData->requestMessageId);
-        msgpack_pack_v4raw(&pk,temp);
-        msgpack_pack_v4raw_body(&pk,temp ? message->dxl_message_specificData.responseData->requestMessageId : NULL, temp);
+        msgpack_pack_v4raw(pk,temp);
+        msgpack_pack_v4raw_body(pk,temp ? message->dxl_message_specificData.responseData->requestMessageId : NULL, temp);
 
         /* Service instance ID */
         temp = strlen(message->dxl_message_specificData.responseData->serviceInstanceId);
-        msgpack_pack_v4raw(&pk,temp);
-        msgpack_pack_v4raw_body(&pk,temp ? message->dxl_message_specificData.responseData->serviceInstanceId : NULL, temp);
+        msgpack_pack_v4raw(pk,temp);
+        msgpack_pack_v4raw_body(pk,temp ? message->dxl_message_specificData.responseData->serviceInstanceId : NULL, temp);
     }
     else if ( message->messageType == DXLMP_RESPONSE_ERROR )
     {
         /* Request message ID */
         temp = strlen(message->dxl_message_specificData.responseErrorData->requestMessageId);
-        msgpack_pack_v4raw(&pk,temp);
-        msgpack_pack_v4raw_body(&pk,temp ? message->dxl_message_specificData.responseErrorData->requestMessageId : NULL, temp);
+        msgpack_pack_v4raw(pk,temp);
+        msgpack_pack_v4raw_body(pk,temp ? message->dxl_message_specificData.responseErrorData->requestMessageId : NULL, temp);
 
         /* Service instance ID */
         temp = strlen(message->dxl_message_specificData.responseErrorData->serviceInstanceId);
-        msgpack_pack_v4raw(&pk,temp);
-        msgpack_pack_v4raw_body(&pk,temp ? message->dxl_message_specificData.responseErrorData->serviceInstanceId : NULL, temp);
+        msgpack_pack_v4raw(pk,temp);
+        msgpack_pack_v4raw_body(pk,temp ? message->dxl_message_specificData.responseErrorData->serviceInstanceId : NULL, temp);
 
         /* Error code */
-        msgpack_pack_int32(&pk,message->dxl_message_specificData.responseErrorData->code);
+        msgpack_pack_int32(pk,message->dxl_message_specificData.responseErrorData->code);
 
         /* Error text */
         temp = strlen(message->dxl_message_specificData.responseErrorData->errorMessage);
-        msgpack_pack_v4raw(&pk,temp);
-        msgpack_pack_v4raw_body(&pk,temp ? message->dxl_message_specificData.responseErrorData->errorMessage : NULL, temp);
+        msgpack_pack_v4raw(pk,temp);
+        msgpack_pack_v4raw_body(pk,temp ? message->dxl_message_specificData.responseErrorData->errorMessage : NULL, temp);
     }
 
     /* Nothing to do for event */
@@ -910,12 +913,12 @@ dxl_message_error_t dxlMessageToBytes( struct  dxl_message_context_t *context,
         if (context && context->logger_)
             context->logger_(context->cb_arg_,"Packing other fields");
 
-        msgpack_pack_array(&pk, message->otherFieldsCount);
+        msgpack_pack_array(pk, message->otherFieldsCount);
         for( i = 0; i < message->otherFieldsCount; i++ )
         {
             temp = strlen(message->otherFields[i]);
-            msgpack_pack_v4raw(&pk, temp);
-            msgpack_pack_v4raw_body(&pk, message->otherFields[i], temp);
+            msgpack_pack_v4raw(pk, temp);
+            msgpack_pack_v4raw_body(pk, message->otherFields[i], temp);
         }
     }
 
@@ -927,16 +930,16 @@ dxl_message_error_t dxlMessageToBytes( struct  dxl_message_context_t *context,
     {
         /* Source tenant GUID */
         temp = strlen(message->sourceTenantGuid);
-        msgpack_pack_v4raw(&pk,temp);
-        msgpack_pack_v4raw_body(&pk,temp ? message->sourceTenantGuid : NULL, temp);
+        msgpack_pack_v4raw(pk,temp);
+        msgpack_pack_v4raw_body(pk,temp ? message->sourceTenantGuid : NULL, temp);
 
         /* Destination tenant GUIDs */
-        msgpack_pack_array(&pk, message->tenantGuidCount);
+        msgpack_pack_array(pk, message->tenantGuidCount);
         for( i = 0; i < message->tenantGuidCount; i++ )
         {
             temp = strlen(message->tenantGuids[i]);
-            msgpack_pack_v4raw(&pk, temp);
-            msgpack_pack_v4raw_body(&pk, message->tenantGuids[i], temp);
+            msgpack_pack_v4raw(pk, temp);
+            msgpack_pack_v4raw_body(pk, message->tenantGuids[i], temp);
         }
     }
 
@@ -948,8 +951,8 @@ dxl_message_error_t dxlMessageToBytes( struct  dxl_message_context_t *context,
     {
         /* Source client instance identifier */
         temp = strlen(message->sourceClientInstanceId);
-        msgpack_pack_v4raw(&pk,temp);
-        msgpack_pack_v4raw_body(&pk,temp ? message->sourceClientInstanceId : NULL, temp);
+        msgpack_pack_v4raw(pk,temp);
+        msgpack_pack_v4raw_body(pk,temp ? message->sourceClientInstanceId : NULL, temp);
     }
 
     ////////////////////////////////////////////////////////////////////////////
@@ -957,11 +960,11 @@ dxl_message_error_t dxlMessageToBytes( struct  dxl_message_context_t *context,
     ////////////////////////////////////////////////////////////////////////////
 
     /* Copy data */
-    *bytes = (unsigned char*)malloc(buffer.size);
-    memcpy((void*)*bytes, buffer.data, buffer.size);
+    *bytes = (unsigned char*)malloc(buffer->size);
+    memcpy((void*)*bytes, buffer->data, buffer->size);
 
-    *size = buffer.size;
-    msgpack_sbuffer_destroy(&buffer);
+    *size = buffer->size;
+    msgpack_sbuffer_destroy(buffer);
     if (context && context->logger_)
         context->logger_(context->cb_arg_,"Message serialized ");
 
@@ -1062,7 +1065,7 @@ dxl_message_error_t unpackRaw(msgpack_unpacker *unpack,
         msgpack_unpacked_destroy(&result);
         return DXLMP_INIT_FAILED;
     }
-    
+
     if ( result.data.type != MSGPACK_OBJECT_STR /*RAW in previous versions*/ )
     {
         msgpack_unpacked_destroy(&result);

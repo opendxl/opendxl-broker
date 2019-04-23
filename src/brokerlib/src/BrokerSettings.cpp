@@ -126,6 +126,13 @@ bool BrokerSettings::sm_sendConnectEvents = false;
 bool BrokerSettings::sm_brokerInitialized = false;
 
 
+// Whether WebSockets is enabled
+bool BrokerSettings::sm_webSocketsEnabled = false;
+
+// The broker WebSockets Listen port
+int BrokerSettings::sm_webSocketsListenPort = 443;
+
+
 /**
  * Normalizes slashes for the current platform 
  *
@@ -255,6 +262,8 @@ string BrokerSettings::dumpSettings()
         out << "\ttenantByteLimit: " << getTenantByteLimit() << endl; 
         out << "\ttenantConnectionLimit: " << getTenantConnectionLimit() << endl; 
     }
+    out << "\tisWebSocketsEnabled: " << ( isWebSocketsEnabled() ? "true" : "false" ) << endl;
+    out << "\twebSocketsListenPort: " <<  getWebSocketsListenPort() << endl;
     out << endl;
 
     return out.str();
@@ -418,4 +427,13 @@ void BrokerSettings::setValuesFromConfig( const Configuration& config )
     // Whether to send events when clients connect/disconnect
     config.getProperty( "sendConnectEvents", strValue, "false" );
     sm_sendConnectEvents = ( strValue == "true" );
+
+    // Whether WebSockets is enabled
+    config.getProperty( "webSocketsEnabled", strValue, "false" );
+    sm_webSocketsEnabled = ( strValue == "true" );
+
+    // The broker WebSockets listen port
+    config.getProperty( "webSocketsListenPort", strValue, "443" );
+    sm_webSocketsListenPort = atoi( strValue.c_str() );
+
 }

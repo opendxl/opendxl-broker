@@ -45,7 +45,8 @@ int _mosquitto_send_connack(struct mosquitto *context, int result)
                 _mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "Sending CONNACK to %s (%d)", context->id, result);
         }else{
             if(IS_DEBUG_ENABLED)
-                _mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "Sending CONNACK to %s (%d)", context->address, result);
+                _mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "Sending CONNACK to %s (%d)", 
+                    (context->address?context->address:"UNKNOWN"), result);
         }
     }
 
@@ -54,6 +55,7 @@ int _mosquitto_send_connack(struct mosquitto *context, int result)
 
     packet->command = CONNACK;
     packet->remaining_length = 2;
+    if(context->wsi) packet->is_ws_packet = 1;
     rc = _mosquitto_packet_alloc(packet);
     if(rc){
         _mosquitto_free(packet);
@@ -78,6 +80,7 @@ int _mosquitto_send_suback(struct mosquitto *context, uint16_t mid, uint32_t pay
 
     packet->command = SUBACK;
     packet->remaining_length = 2+payloadlen;
+    if(context->wsi) packet->is_ws_packet = 1;
     rc = _mosquitto_packet_alloc(packet);
     if(rc){
         _mosquitto_free(packet);
