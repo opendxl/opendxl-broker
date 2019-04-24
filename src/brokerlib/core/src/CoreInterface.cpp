@@ -200,7 +200,8 @@ void CoreInterface::setBridgeConfiguration( const CoreBridgeConfiguration& confi
 {
     // Set the local broker properties in the registry
     BrokerRegistry::getInstance().setLocalBrokerProperties( 
-        config.getHostname(), config.getIpAddress(), config.getHubName(), config.getPort() );
+        config.getHostname(), config.getIpAddress(), config.getHubName(),
+        config.getPort(), BrokerSettings::getWebSocketsListenPort() );
 
     if( config != m_bridgeConfig )
     {

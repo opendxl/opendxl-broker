@@ -103,6 +103,7 @@ public:
      * @param   port The broker port
      * @param   ttl The broker time to live
      * @param   startTime The broker startup time
+     * @param   webSocketPort The WebSocket port
      * @param   policyHostname The policy host name
      * @param   policyIpAddress The policy IP address
      * @param   policyHubName The policy hub name
@@ -114,6 +115,7 @@ public:
     */
     bool addBroker( const std::string &brokerId, const std::string &hostname = registry::DEFAULTHOSTNAME,
         uint32_t port = DEFAULTPORT, uint32_t ttl = registry::DEFAULTTTL, uint32_t startTime = 0,
+        uint32_t webSocketPort = registry::DEFAULTWEBSOCKETPORT,
         const std::string& policyHostname ="", const std::string& policyIpAddress ="",
         const std::string& policyHubName ="", uint32_t policyPort = DEFAULTPORT,
         const std::string& brokerVersion = "",
@@ -370,9 +372,10 @@ public:
      * @param   ipAddress The broker IP address
      * @param   hub The broker hub name
      * @param   port The broker port
+     * @param   webSocketPort The broker WebSocket port
      */
     void setLocalBrokerProperties( const std::string &hostName, const std::string& ipAddress,
-        const std::string &hub, uint32_t port );
+        const std::string &hub, uint32_t port, uint32_t webSocketPort );
 
     /**
      * Sets the hostname of the managing ePO for the local broker
@@ -422,6 +425,13 @@ public:
      * @return  The local broker port
      */
     uint32_t getLocalBrokerPort();
+
+    /**
+     * Returns the local broker WebSocket port
+     *
+     * @return  The local broker WebSocket port
+     */
+    uint32_t getLocalBrokerWebSocketPort();
 
     /**
      * Sets the local broker connection limit
@@ -531,6 +541,8 @@ private:
     std::string m_localBrokerHub;
     /** The local broker port (as reported in policy) */
     uint32_t m_localBrokerPort;
+    /** The local broker WebSocket port */
+    uint32_t m_localBrokerWebSocketPort;
     /** The local broker version (as reported in BrokerHelpers) */
     std::string m_localBrokerVersion;
     /** The local managing ePO (as reported in policy) */

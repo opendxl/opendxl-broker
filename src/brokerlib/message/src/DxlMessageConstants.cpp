@@ -103,6 +103,7 @@ const char* DxlMessageConstants::PROP_POLICY_HUB = "policyHub";
 const char* DxlMessageConstants::PROP_POLICY_IP_ADDRESS = "policyIpAddress";
 const char* DxlMessageConstants::PROP_POLICY_PORT = "policyPort";
 const char* DxlMessageConstants::PROP_PORT = "port";
+const char* DxlMessageConstants::PROP_WEBSOCKET_PORT = "webSocketPort";
 const char* DxlMessageConstants::PROP_PROPERTIES = "properties";
 const char* DxlMessageConstants::PROP_REGISTRATION_TIME = "registrationTime";
 const char* DxlMessageConstants::PROP_REQUEST_CHANNELS = "requestChannels";

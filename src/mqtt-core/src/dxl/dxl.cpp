@@ -41,14 +41,16 @@ bool dxl_main(
     const char** brokerKeyFile, const char** brokerCertFile, const char** ciphers,
     uint64_t* maxPacketBufferSize, int* listenPort, int* mosquittoLogType,
     int* messageSizeLimit, char** user,
-    struct cert_hashes** brokerCertsUtHash )
+    struct cert_hashes** brokerCertsUtHash,
+    bool *webSocketsEnabled, int* webSocketsListenPort )
 {
     return dxl::broker::brokerlib_main(
         argc, argv, tlsEnabled, tlsBridgingInsecure, fipsEnabled,
         clientCertChainFile, brokerCertChainFile,
         brokerKeyFile, brokerCertFile, ciphers, maxPacketBufferSize, listenPort, 
         mosquittoLogType, messageSizeLimit, user,
-        brokerCertsUtHash );
+        brokerCertsUtHash,
+        webSocketsEnabled, webSocketsListenPort );
 }
 
 /** {@inheritDoc} */

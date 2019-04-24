@@ -41,6 +41,8 @@ extern int NID_dxlTenantGuid;
  * @param   messageSizeLimit The mosquitto message size limit (out)
  * @param   user The user to run the broker as (out)
  * @param   brokerCertsUtHash List of broker certificate hashes (SHA-1) (out)
+ * @param   webSocketsEnabled Whether WebSockets is enabled (out)
+ * @param   webSocketsListenPort The broker WebSockets listen port (out)
  * @return  Whether Mosquitto should continue starting
  */
 bool dxl_main(
@@ -50,7 +52,8 @@ bool dxl_main(
     const char** brokerKeyFile, const char** brokerCertFile, const char** ciphers,
     uint64_t* maxPacketBufferSize, int* listenPort, int* mosquittoLogType,
     int* messageSizeLimit, char** user,
-    struct cert_hashes** brokerCertsUtHash );
+    struct cert_hashes** brokerCertsUtHash,
+    bool *webSocketsEnabled, int* webSocketsListenPort );
 
 /**
  * Invoked when the broker library can be initialized.

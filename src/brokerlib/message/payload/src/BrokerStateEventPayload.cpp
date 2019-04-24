@@ -36,6 +36,7 @@ void BrokerStateEventPayload::write( Json::Value& out ) const
     out[ DxlMessageConstants::PROP_GUID ] = m_brokerGuid;
     out[ DxlMessageConstants::PROP_HOSTNAME ] = m_brokerHostname;
     out[ DxlMessageConstants::PROP_PORT ] = m_brokerPort;
+    out[ DxlMessageConstants::PROP_WEBSOCKET_PORT ] = m_brokerWebSocketPort;
     out[ DxlMessageConstants::PROP_TTL_MINS ] = m_brokerTtlMins;
     out[ DxlMessageConstants::PROP_BROKER_VERSION] = m_brokerVersion;
     out[ DxlMessageConstants::PROP_START_TIME ] = (UInt)m_startTime;
@@ -65,6 +66,7 @@ void BrokerStateEventPayload::read( const Json::Value& in )
     m_brokerGuid = in[ DxlMessageConstants::PROP_GUID ].asString();
     m_brokerHostname = in[ DxlMessageConstants::PROP_HOSTNAME ].asString();
     m_brokerPort = in[ DxlMessageConstants::PROP_PORT ].asUInt();
+    m_brokerWebSocketPort = in[ DxlMessageConstants::PROP_WEBSOCKET_PORT ].asUInt();
     m_brokerTtlMins = in[ DxlMessageConstants::PROP_TTL_MINS ].asUInt();
     m_startTime = in[ DxlMessageConstants::PROP_START_TIME ].asUInt();
     m_brokerPolicyHostname = in[ DxlMessageConstants::PROP_POLICY_HOSTNAME ].asString();

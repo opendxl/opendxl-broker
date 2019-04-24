@@ -36,6 +36,7 @@ POSSIBILITY OF SUCH DAMAGE.
 extern int log_priorities;
 #define IS_INFO_ENABLED (log_priorities & MOSQ_LOG_INFO)
 #define IS_DEBUG_ENABLED (log_priorities & MOSQ_LOG_DEBUG)
+#define IS_LOGLEVEL_ENABLED(X) (log_priorities & (X))
 // DXL End
 int _mosquitto_log_printf(struct mosquitto *mosq, int priority, const char *fmt, ...);
 

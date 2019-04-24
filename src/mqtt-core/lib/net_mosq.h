@@ -81,7 +81,8 @@ ssize_t _mosquitto_net_read(struct mosquitto *mosq, void *buf, size_t count);
 ssize_t _mosquitto_net_write(struct mosquitto *mosq, void *buf, size_t count);
 
 int _mosquitto_packet_write(struct mosquitto *mosq);
-int _mosquitto_packet_read(struct mosquitto_db *db, struct mosquitto *mosq);
+int _mosquitto_packet_read(struct mosquitto_db *db, struct mosquitto *mosq, 
+                           uint8_t* ws_buf, uint32_t ws_len);
 
 int _mosquitto_socket_apply_tls(struct mosquitto *mosq);
 

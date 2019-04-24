@@ -60,8 +60,7 @@ POSSIBILITY OF SUCH DAMAGE.
 // EPOLL Begin
 #include <sys/epoll.h>
 #include <errno.h>
-/* Flag to track listener contexts */
-#define LISTENER_FLAG 0x80000000
+
 #ifndef EPOLLRDHUP
 /* Ignore EPOLLRDHUP flag on systems where it doesn't exist. */
 #define EPOLLRDHUP 0
@@ -71,12 +70,10 @@ POSSIBILITY OF SUCH DAMAGE.
 extern int run;
 
 static int epoll_add_listeners();
-static void loop_handle_errors(struct mosquitto_db *db, struct epoll_event *events, int eventcount);
 static void handle_read(struct mosquitto_db *db, struct mosquitto *context, struct epoll_event *event);
 static void handle_write(struct mosquitto_db *db, struct mosquitto *context,
     struct epoll_event *event, uint32_t contextId);
 static void loop_handle_reads_writes(struct mosquitto_db *db, struct epoll_event *events, int eventcount);
-static bool isListener(struct epoll_event *event);
 
 /* The EPOLL file descriptor */
 static int efd = 0;
@@ -351,7 +348,7 @@ void write_message_loop(struct mosquitto_db *db)
 
     HASH_ITER(hh, new_msgs_hash, hash, tmp){
         struct mosquitto *context = hash->context;
-        if(context->sock != INVALID_SOCKET){
+        if(!IS_CONTEXT_INVALID(context)){ 
             write_context_messages(db, context, mosquitto_time()); // EPOLL
             if(!context->msgs){
                 remove_new_msgs_set(context);
@@ -448,12 +445,12 @@ void maintenance_loop(struct mosquitto_db *db)
             now = mosquitto_time();            
             db->contexts[i]->pollfd_index = -1;
 
-            if(db->contexts[i]->sock != INVALID_SOCKET){
+            if(!IS_CONTEXT_INVALID(db->contexts[i])){
                 if(db->contexts[i]->bridge){
                     _mosquitto_check_keepalive(db->contexts[i]);
 
                     // DXL Begin
-                    if(db->contexts[i]->sock == INVALID_SOCKET){
+                    if(db->contexts[i]->sock == INVALID_SOCKET){ 
                         // Bridge connection timed out, fire a bridge disconnected event
                         dxl_on_bridge_disconnected(db->contexts[i]);
                     }
@@ -478,6 +475,10 @@ void maintenance_loop(struct mosquitto_db *db)
                     restart_bridge_connection(db, db->contexts[i], now, i); // EPOLL
                 }else{ 
                     if(db->contexts[i]->clean_session == true){
+                        if(IS_DEBUG_ENABLED)
+                            _mosquitto_log_printf(NULL, MOSQ_LOG_NOTICE,
+                            "Cleaning session %s with index %d and numeric_id %d.", 
+                            db->contexts[i]->id, i, db->contexts[i]->numericId);
                         // DXL Begin
                         sessions_to_clean[clean_session_index++] = db->contexts[i];
                         db->contexts[i]->clean_subs = true;
@@ -509,13 +510,8 @@ static struct epoll_event epoll_events[MAXEVENTS];
 // DXL
 int loop_exit_code = MOSQ_ERR_SUCCESS;
 
-int mosquitto_main_loop(struct mosquitto_db *db)
+int mosquitto_epoll_init()
 {
-    time_t start_time = mosquitto_time();
-    time_t last_store_clean = mosquitto_time();
-    int fdcount;
-    int i;
-
     /*  
      * EPOLL related setup
      */
@@ -523,7 +519,20 @@ int mosquitto_main_loop(struct mosquitto_db *db)
     if(efd == -1){
         _mosquitto_log_printf(NULL, MOSQ_LOG_ERR, "Error: %s.", strerror(errno));
         return 1;
-    }    
+    }   
+    return 0;
+}
+
+void mosquitto_epoll_destroy()
+{
+}
+
+int mosquitto_main_loop(struct mosquitto_db *db)
+{
+    time_t start_time = mosquitto_time();
+    time_t last_store_clean = mosquitto_time();
+    int fdcount;
+    int i;
 
     sigset_t sigblock;
     sigemptyset(&sigblock);
@@ -543,13 +552,17 @@ int mosquitto_main_loop(struct mosquitto_db *db)
         if(now >= do_maintenance){
             maintenance_loop(db);
             dxl_on_maintenance(now);
+            if(db->config->ws_enabled){
+                mosquitto_ws_do_maintenance();
+            }
             do_maintenance = now + 10;
         }
 
         /* See if there are any events */
         fdcount = epoll_pwait(efd, epoll_events, MAXEVENTS, 100, &sigblock);
         if(fdcount == -1){
-            loop_handle_errors(db, epoll_events, fdcount);
+            _mosquitto_log_printf(NULL, MOSQ_LOG_ERR,
+                "epoll_wait: error %d", errno);
         }else{
             loop_handle_reads_writes(db, epoll_events, fdcount);
 
@@ -558,10 +571,16 @@ int mosquitto_main_loop(struct mosquitto_db *db)
              */
             int *listensock = mosquitto_get_listensocks();
             for(i=0; i<fdcount; i++){
-                if(isListener(&epoll_events[i])){
-                    if(epoll_events[i].events & (EPOLLIN | EPOLLPRI)){
-                        uint32_t ctx_idx=epoll_events[i].data.u32;
-                        while(mqtt3_socket_accept(db, listensock[ctx_idx^LISTENER_FLAG]) != -1){
+                if(mosquitto_epoll_flag_is_listener(&epoll_events[i])){
+                    if(mosquitto_epoll_flag_is_websocket(&epoll_events[i])){
+                        mosquitto_ws_handle_poll(&epoll_events[i]);
+                        
+                    }
+                    else{
+                        if(epoll_events[i].events & (EPOLLIN | EPOLLPRI)){
+                            uint32_t ctx_idx=epoll_events[i].data.u32;
+                            while(mqtt3_socket_accept(db, listensock[ctx_idx^MOSQUITTO_EPOLL_DATA_LISTENER_FLAG]) != -1){
+                            }
                         }
                     }
                 }
@@ -575,7 +594,6 @@ int mosquitto_main_loop(struct mosquitto_db *db)
         // Run the work queue (if there are any pending tasks)
         dxl_run_work_queue();
     }
-
 
     return loop_exit_code; // DXL
 }
@@ -596,33 +614,18 @@ static void do_disconnect(struct mosquitto_db *db, int context_index)
     mqtt3_context_disconnect(db, db->contexts[context_index]);
 }
 
-/* Error occurred, probably an fd has been closed.
- * Loop through and check them all.
- */
-static void loop_handle_errors(struct mosquitto_db *db, struct epoll_event* events, int eventcount)
-{
-    int i;
-
-    for(i=0; i<eventcount; i++){
-        if(!isListener(&events[i])){
-            uint32_t ctx_idx=events[i].data.u32;
-            if(db->contexts[ctx_idx] && db->contexts[ctx_idx]->sock != INVALID_SOCKET){
-                if(events[i].events & (EPOLLHUP | EPOLLRDHUP | EPOLLERR)){ /* DXL: 1.3.5 uses POLLERR | POLLNVAL */
-                    do_disconnect(db, ctx_idx);
-                }
-            }
-        }
-    }
-}
-
 static void loop_handle_reads_writes(struct mosquitto_db *db, struct epoll_event* events, int eventcount)
 {
     int i;
 
     for(i=0; i<eventcount; i++){
         struct epoll_event *event = &events[i];
-        if(isListener(event)){
+        if(mosquitto_epoll_flag_is_listener(event)){
             continue;/* Skip listeners */
+        }
+        if(mosquitto_epoll_flag_is_websocket(event)){
+            mosquitto_ws_handle_poll(event);
+            continue;
         }
         uint32_t contextid = event->data.u32;
         struct mosquitto *context = db->contexts[contextid];
@@ -678,6 +681,10 @@ int mosquitto_epoll_restart_listeners()
         listener->socks = NULL;
     }
 
+    if(config->ws_enabled){
+        mosquitto_ws_destroy();
+    }
+
     // Create listener sockets
     int listensock_index = 0;
     for(int i = 0; i < config->listener_count; i++){
@@ -705,6 +712,40 @@ int mosquitto_epoll_restart_listeners()
     // Add listeners to EPOLL
     epoll_add_listeners();
 
+    if(config->ws_enabled){
+        mosquitto_ws_init(config);
+    }
+
+    return 0;
+}
+
+int mosquitto_ws_add_fd(int sock, struct epoll_event* event)
+{       
+    if(epoll_ctl(efd, EPOLL_CTL_ADD, sock, event) == -1){
+        _mosquitto_log_printf(NULL, MOSQ_LOG_ERR, "(mosquitto_ws_add_fd) Error: %s.", strerror(errno));
+        return 1;
+    }
+    return 0;
+}
+
+int mosquitto_ws_mod_fd(int sock, struct epoll_event* event)
+{
+    if(epoll_ctl(efd, EPOLL_CTL_MOD, sock, event) == -1){
+        _mosquitto_log_printf(NULL, MOSQ_LOG_ERR, "(mosquitto_ws_mod_fd) Error: %s.", strerror(errno));
+        return 1;
+    }
+
+    return 0;
+}
+
+int mosquitto_ws_del_fd(int sock)
+{       
+    struct epoll_event event = {0};
+    if(epoll_ctl(efd, EPOLL_CTL_DEL, sock, &event) == -1){
+        _mosquitto_log_printf(NULL, MOSQ_LOG_ERR, "(mosquitto_ws_del_fd) Error: %s.", strerror(errno));
+        return 1;
+    }
+
     return 0;
 }
 
@@ -716,7 +757,7 @@ static int epoll_add_listeners()
     for(int i = 0; i < mosquitto_get_listensock_count(); i++){
         int sock = mosquitto_get_listensocks()[i];
         struct epoll_event event = {0};
-        event.data.u32 = (LISTENER_FLAG | i);
+        event.data.u32 = (MOSQUITTO_EPOLL_DATA_LISTENER_FLAG | i);
         event.events = EPOLLIN;
         int s = epoll_ctl(efd, EPOLL_CTL_ADD, sock, &event);
         if(s == -1){
@@ -728,9 +769,9 @@ static int epoll_add_listeners()
     return 0;
 }
 
-static bool isListener(struct epoll_event *event)
+bool mosquitto_epoll_flag_is_listener(struct epoll_event *event)
 {
-    return (event->data.u32 & LISTENER_FLAG) != 0;
+    return (event->data.u32 & MOSQUITTO_EPOLL_DATA_LISTENER_FLAG) != 0;
 }
 
 static void handle_write(struct mosquitto_db *db, struct mosquitto *context, struct epoll_event *event, uint32_t contextId)
@@ -766,7 +807,7 @@ static void handle_read(struct mosquitto_db *db, struct mosquitto *context, stru
     if(context && context->sock != INVALID_SOCKET){
         //assert(pollfds[db->contexts[i]->pollfd_index].fd == db->contexts[i]->sock);
         if(event->events & EPOLLIN || (context->ssl && context->state == mosq_cs_new)){
-            if(_mosquitto_packet_read(db, context)){
+            if(_mosquitto_packet_read(db, context, NULL, 0)){
                 if(db->config->connection_messages == true){
                     if(context->state != mosq_cs_disconnecting){
                         if(IS_NOTICE_ENABLED)

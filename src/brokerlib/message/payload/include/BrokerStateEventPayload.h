@@ -32,6 +32,7 @@ public:
      * @param   guid The broker guid
      * @param   hostname The broker hostname
      * @param   port The broker port
+     * @param   port The broker WebSocket port
      * @param   ttlMins The broker TTL (minutes)
      * @param   connections The brokers current connections
      * @param   childConnections The brokers current child connections
@@ -47,7 +48,7 @@ public:
      */
     explicit BrokerStateEventPayload( 
         const std::string& guid = "", const std::string& hostname = "",
-        uint32_t port = 0, uint32_t ttlMins = 0, 
+        uint32_t port = 0, uint32_t webSocketPort = 0, uint32_t ttlMins = 0,
         const unordered_set<std::string> connections = unordered_set<std::string>(), 
         const unordered_set<std::string> childConnections = unordered_set<std::string>(), 
         uint32_t startTime = 0, const std::string& policyHostname = "", 
@@ -55,8 +56,10 @@ public:
         uint32_t policyPort = 0, const std::string& brokerVersion = "",
         const std::string managingEpoName = "", uint32_t connectionLimit = 0,
         bool topicRoutingEnabled = false ) :
-        m_brokerGuid( guid ), m_brokerHostname( hostname ), m_brokerPort( port ), 
-        m_brokerTtlMins( ttlMins ), m_connections( connections ), 
+        m_brokerGuid( guid ), m_brokerHostname( hostname ), m_brokerPort( port ),
+        m_brokerWebSocketPort( webSocketPort ),
+        m_brokerTtlMins( ttlMins ),
+        m_connections( connections ),
         m_childConnections( childConnections ),
         m_startTime( startTime ),
         m_brokerPolicyHostname( policyHostname ),
@@ -76,8 +79,9 @@ public:
     explicit BrokerStateEventPayload(
         const dxl::broker::BrokerState& registryBroker ) :
         m_brokerGuid( registryBroker.getBroker().getId() ),  
-        m_brokerHostname( registryBroker.getBroker().getHostname() ), 
-        m_brokerPort( registryBroker.getBroker().getPort() ), 
+        m_brokerHostname( registryBroker.getBroker().getHostname() ),
+        m_brokerPort( registryBroker.getBroker().getPort() ),
+        m_brokerWebSocketPort( registryBroker.getBroker().getWebSocketPort() ),
         m_brokerTtlMins( registryBroker.getBroker().getTtl() ), 
         m_connections( registryBroker.getConnections() ),
         m_childConnections( registryBroker.getChildConnections() ),
@@ -113,6 +117,13 @@ public:
      * @return  The broker port
      */
     uint32_t getPort() const { return m_brokerPort; }
+
+    /**
+     * Returns the broker WebSocket port
+     *
+     * @return  The broker WebSocket port
+     */
+    uint32_t getWebSocketPort() const { return m_brokerWebSocketPort; }
 
     /**
      * Returns the broker TTL (in minutes)
@@ -213,6 +224,8 @@ private:
     std::string m_brokerHostname;
     /** The broker port */
     uint32_t m_brokerPort;
+    /** The broker WebSocket port */
+    uint32_t m_brokerWebSocketPort;
     /** The broker TTL */
     uint32_t m_brokerTtlMins;
     /** The broker's connections */

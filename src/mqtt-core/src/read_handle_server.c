@@ -110,6 +110,13 @@ int mqtt3_handle_connect(struct mosquitto_db *db, struct mosquitto *context)
         mqtt3_context_disconnect(db, context);
         return 1;
     }
+
+    if(db->config->connection_messages == true){
+        if(IS_DEBUG_ENABLED)
+            _mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "Protocol version: %d. Protocol name: %s.",
+                protocol_version, protocol_name);
+    }
+
     if(!strcmp(protocol_name, PROTOCOL_NAME_v31)){
         if((protocol_version&0x7F) != PROTOCOL_VERSION_v31){
             if(db->config->connection_messages == true){
@@ -380,7 +387,7 @@ int mqtt3_handle_connect(struct mosquitto_db *db, struct mosquitto *context)
     if(find_cih){
         i = find_cih->db_context_index;
         /* Found a matching client */
-        if(db->contexts[i]->sock == -1){
+        if(IS_CONTEXT_INVALID(db->contexts[i])){
             /* Client is reconnecting after a disconnect */
             /* FIXME - does anything else need to be done here? */
         }else{
@@ -389,48 +396,54 @@ int mqtt3_handle_connect(struct mosquitto_db *db, struct mosquitto *context)
                 _mosquitto_log_printf(NULL, MOSQ_LOG_ERR, "Client %s already connected, closing old connection.", client_id);
             }
         }
-        db->contexts[i]->clean_session = (clean_session != 0);
-        mqtt3_context_cleanup(db, db->contexts[i], false, true /* DXL */);
-        db->contexts[i]->state = mosq_cs_connected;
-        db->contexts[i]->address = _mosquitto_strdup(context->address);
-        db->contexts[i]->sock = context->sock;
-        db->contexts[i]->listener = context->listener;
-        db->contexts[i]->last_msg_in = mosquitto_time();
-        db->contexts[i]->last_msg_out = mosquitto_time();
-        db->contexts[i]->keepalive = context->keepalive;
-        db->contexts[i]->pollfd_index = context->pollfd_index;
-        db->contexts[i]->epoll_events = context->epoll_events; // EPOLL
-        // DXL Begin
-        db->contexts[i]->dxl_flags = context->dxl_flags;
-        // DXL End
-        db->contexts[i]->ssl = context->ssl;
-        // DXL begin
-        if(context->dxl_client_guid){
-            db->contexts[i]->dxl_client_guid = _mosquitto_strdup(context->dxl_client_guid);
+        if(db->contexts[i]->wsi || context->wsi){
+            // Close off the old connection
+            mqtt3_context_disconnect(db, db->contexts[i]);
         }
-        if(context->dxl_tenant_guid){
-            db->contexts[i]->dxl_tenant_guid = _mosquitto_strdup(context->dxl_tenant_guid);
-        }
+        else{
+            db->contexts[i]->clean_session = (clean_session != 0);
+            mqtt3_context_cleanup(db, db->contexts[i], false, true /* DXL */);
+            db->contexts[i]->state = mosq_cs_connected;
+            db->contexts[i]->address = _mosquitto_strdup(context->address);
+            db->contexts[i]->sock = context->sock;
+            db->contexts[i]->listener = context->listener;
+            db->contexts[i]->last_msg_in = mosquitto_time();
+            db->contexts[i]->last_msg_out = mosquitto_time();
+            db->contexts[i]->keepalive = context->keepalive;
+            db->contexts[i]->pollfd_index = context->pollfd_index;
+            db->contexts[i]->epoll_events = context->epoll_events; // EPOLL
+            // DXL Begin
+            db->contexts[i]->dxl_flags = context->dxl_flags;
+            // DXL End
+            db->contexts[i]->ssl = context->ssl;
+            // DXL begin
+            if(context->dxl_client_guid){
+                db->contexts[i]->dxl_client_guid = _mosquitto_strdup(context->dxl_client_guid);
+            }
+            if(context->dxl_tenant_guid){
+                db->contexts[i]->dxl_tenant_guid = _mosquitto_strdup(context->dxl_tenant_guid);
+            }
 
-        // Copy certs
-        struct cert_hashes *current, *tmp;
-        HASH_ITER(hh, context->cert_hashes, current, tmp){
-            struct cert_hashes* s = (struct cert_hashes*)_mosquitto_malloc(sizeof(struct cert_hashes));
-            s->cert_sha1 = strdup(current->cert_sha1);
-            HASH_ADD_KEYPTR(hh, db->contexts[i]->cert_hashes, s->cert_sha1, (unsigned int)strlen(s->cert_sha1), s);
+            // Copy certs
+            struct cert_hashes *current, *tmp;
+            HASH_ITER(hh, context->cert_hashes, current, tmp){
+                struct cert_hashes* s = (struct cert_hashes*)_mosquitto_malloc(sizeof(struct cert_hashes));
+                s->cert_sha1 = strdup(current->cert_sha1);
+                HASH_ADD_KEYPTR(hh, db->contexts[i]->cert_hashes, s->cert_sha1, (unsigned int)strlen(s->cert_sha1), s);
+            }
+            // DXL end
+            context->listener = NULL; // DXL
+            context->sock = -1;
+            context->ssl = NULL;
+            context->state = mosq_cs_disconnecting;
+            context = db->contexts[i];
+            if(context->msgs){
+                mqtt3_db_message_reconnect_reset(context);
+            }
+            mosquitto_epoll_update_context_index(db->contexts[i], i); // EPOLL
+            context->numericId = i; // DXL
+            context->clean_subs = false; // DXL
         }
-        // DXL end
-        context->listener = NULL; // DXL
-        context->sock = -1;
-        context->ssl = NULL;
-        context->state = mosq_cs_disconnecting;
-        context = db->contexts[i];
-        if(context->msgs){
-            mqtt3_db_message_reconnect_reset(context);
-        }
-        mosquitto_epoll_update_context_index(db->contexts[i], i); // EPOLL
-        context->numericId = i; // DXL
-        context->clean_subs = false; // DXL
     }
 
     context->id = client_id;
@@ -497,7 +510,7 @@ int mqtt3_handle_connect(struct mosquitto_db *db, struct mosquitto *context)
         }else{
             if(IS_NOTICE_ENABLED)
                 _mosquitto_log_printf(NULL, MOSQ_LOG_NOTICE, "New client connected from %s as %s (c%d, k%d).",
-                context->address, context->id, context->clean_session, context->keepalive);
+                context->address?context->address:"UNKNOWN", context->id, context->clean_session, context->keepalive);
         }
     }
 

@@ -501,6 +501,20 @@ public:
      */
     static void setBrokerInitialized( bool initialized ) { sm_brokerInitialized = initialized; }
 
+    /**
+     * Returns whether WebSockets is enabled for broker
+     *
+     * @return  Whether WebSockets is enabled for broker
+     */
+    static bool isWebSocketsEnabled() { return sm_webSocketsEnabled; }
+
+    /**
+     * Returns the broker WebSockets listen port
+     *
+     * @return  The broker WebSockets listen port
+     */
+    static int getWebSocketsListenPort() { return sm_webSocketsListenPort; }
+
 private:
     /** The broker GUID */
     static std::string sm_guid;
@@ -626,6 +640,13 @@ private:
 
     /** Whether the broker has been initialized */
     static bool sm_brokerInitialized;
+
+    /** Whether WebSockets is enabled */
+    static bool sm_webSocketsEnabled;
+
+    /** The broker WebSockets listen port */
+    static int sm_webSocketsListenPort;
+
 };
 
 } /* namespace broker */

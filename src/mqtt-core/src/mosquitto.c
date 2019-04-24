@@ -260,6 +260,8 @@ int main(int argc, char *argv[])
     int messageSizeLimit = 1048576;
     char* user = NULL;
     struct cert_hashes* brokerCertsUtHash = NULL;
+    bool webSocketsEnabled = false;
+    int webSocketsPort = 443;
     const char *sslver;
 
     if(!dxl_main(argc, argv,
@@ -276,7 +278,9 @@ int main(int argc, char *argv[])
         &mosquittoLogType,
         &messageSizeLimit,
         &user,
-        &brokerCertsUtHash)){
+        &brokerCertsUtHash,
+        &webSocketsEnabled,
+        &webSocketsPort)){
 
         // Failed to start the broker library, exit.
         _mosquitto_log_printf(NULL, MOSQ_LOG_ERR, "Broker library forced exit (main).");
@@ -306,8 +310,9 @@ int main(int argc, char *argv[])
     }
     config.user = (strlen(user) > 0) ? user : NULL;
 
-    rc = drop_privileges(&config);
-    if(rc != MOSQ_ERR_SUCCESS) return rc;
+    // Update Websockets settings
+    config.ws_enabled = webSocketsEnabled;
+    config.ws_port = webSocketsPort;
 
     // Update TLS settings
     mqtt3_config_update_tls(
@@ -409,8 +414,11 @@ int main(int argc, char *argv[])
     signal(SIGUSR2, handle_sigusr2);
     signal(SIGPIPE, SIG_IGN);
 
+    // Initialize epoll
+    mosquitto_epoll_init();
+
     // DXL Begin
-    // Initializae the broker library
+    // Initialize the broker library
     if(!dxl_brokerlib_init()){
         // Failed to init the broker library, exit.
         _mosquitto_log_printf(NULL, MOSQ_LOG_ERR, "Broker library forced exit (init).");
@@ -418,6 +426,16 @@ int main(int argc, char *argv[])
     }
     // DXL End
 
+    // Initialize WebSockets
+    if(webSocketsEnabled){
+        mosquitto_ws_init(&config);
+    }
+
+    // Drop root privileges, now that the socket is open
+    rc = drop_privileges(&config);
+    if(rc != MOSQ_ERR_SUCCESS) return rc;
+    
+    
     for(i=0; i<config.bridge_count; i++){
         if(mqtt3_bridge_new(&int_db, &(config.bridges[i]))){
             if(IS_WARNING_ENABLED)
@@ -441,6 +459,13 @@ int main(int argc, char *argv[])
     mqtt3_log_close();
 
     // DXL Begin
+    
+    if(webSocketsEnabled){
+        mosquitto_ws_destroy();
+    }
+
+    mosquitto_epoll_destroy();
+
     for(i=0; i<int_db.context_count; i++){
         if(int_db.contexts[i]){
             int_db.contexts[i]->clean_subs = true;
