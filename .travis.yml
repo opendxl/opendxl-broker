@@ -19,13 +19,13 @@ before_install:
 script:
   - git clone --recursive https://github.com/opendxl/opendxl-client-java.git
   - cd opendxl-client-java
-  - ./gradlew assemble
+  - ./gradlew assemble --console=plain
   - java -jar ./build/libs/dxlclient*all.jar provisionconfig clientconfig 127.0.0.1 client -u admin -p password
   - sed -i -e "s/127.0.0.1;127.0.0.1/127.0.0.1/g" -e "/local/d" -e "/docker/d" clientconfig/dxlclient.config
   - cat clientconfig/dxlclient.config
   - echo Running tests with MQTT
-  - ./gradlew test --info
+  - ./gradlew test --info --console=plain
   - sed -i -e "s/= false/= true/g" -e "s/;8883/;443/g" -e "s/Brokers/BrokersWebSockets/g"  clientconfig/dxlclient.config
   - cat clientconfig/dxlclient.config
   - echo Running tests with WebSockets
-  - ./gradlew cleanTest test --info
+  - ./gradlew cleanTest test --info --console=plain
