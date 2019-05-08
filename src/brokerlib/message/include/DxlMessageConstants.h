@@ -146,6 +146,8 @@ struct DxlMessageConstants
     static const char* PROP_POLICY_PORT;
     /** A port property */
     static const char* PROP_PORT;
+    /** A WebSocket port property */
+    static const char* PROP_WEBSOCKET_PORT;
     /** A properties property */
     static const char* PROP_PROPERTIES;
     /** Set of request channels property */

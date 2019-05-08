@@ -76,7 +76,6 @@ int mqtt3_socket_accept(struct mosquitto_db *db, int listensock)
     int i;
     int j;
     int new_sock = -1;
-    struct mosquitto **tmp_contexts = NULL;
     struct mosquitto *new_context;
     BIO *bio;
     int rc;
@@ -180,32 +179,9 @@ int mqtt3_socket_accept(struct mosquitto_db *db, int listensock)
         if(IS_NOTICE_ENABLED)
             _mosquitto_log_printf(NULL, MOSQ_LOG_NOTICE,
                 "New connection from %s on port %d.", new_context->address, new_context->listener->port);
-        for(i=0; i<db->context_count; i++){
-            if(db->contexts[i] == NULL){
-                db->contexts[i] = new_context;
-                new_context->numericId = i; // DXL
-                mosquitto_add_new_clients_set(new_context); // Loop OPT
-                break;
-            }
-        }
-        if(i==db->context_count){
-            tmp_contexts = (struct mosquitto **)_mosquitto_realloc(
-                db->contexts, sizeof(struct mosquitto*)*(db->context_count+CONTEXT_REALLOC_SIZE));
-            if(tmp_contexts){
-                memset(tmp_contexts+db->context_count, 0, (CONTEXT_REALLOC_SIZE*sizeof(struct mosquitto*)));  
-                db->context_count+=CONTEXT_REALLOC_SIZE;
-                db->contexts = tmp_contexts;
-                db->contexts[i] = new_context;
-                new_context->numericId = i; // DXL
-                mosquitto_add_new_clients_set(new_context); // Loop OPT
-            }else{
-                // Out of memory
-                mqtt3_context_cleanup(NULL, new_context, true, true /* DXL */);
+        if(mqtt3_db_add_new_context(db, new_context)){
                 return -1;
-            }
         }
-        // If we got here then the context's DB index is "i" regardless of how we got here
-        new_context->db_index = i;
 
 #ifdef WITH_WRAP
     }
@@ -227,7 +203,7 @@ static struct mosquitto *get_client_context(X509_STORE_CTX *ctx, int index)
     return retVal;
 }
 
-static int process_client_certificate(X509_STORE_CTX *ctx, struct mosquitto *context)
+int mosquitto_process_client_certificate(X509_STORE_CTX *ctx, struct mosquitto *context)
 {
     // Whether certificate validation succeeded
     int succeeded = 1;
@@ -321,7 +297,7 @@ static int client_certificate_verify(int preverify_ok, X509_STORE_CTX *ctx)
     // Get the mosquitto context
     struct mosquitto *context = get_client_context(ctx, tls_ex_index_context);
     if(context){
-        if(!process_client_certificate(ctx, context)){
+        if(!mosquitto_process_client_certificate(ctx, context)){
             preverify_ok = 0;
         }
     }

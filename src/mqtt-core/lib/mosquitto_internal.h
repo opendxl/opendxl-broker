@@ -72,7 +72,8 @@ enum mosquitto_client_state {
     mosq_cs_disconnecting = 2,
     mosq_cs_connect_async = 3,
     mosq_cs_connect_pending = 4,
-    mosq_cs_connect_srv = 5
+    mosq_cs_connect_srv = 5,
+    mosq_cs_ws_dead = 6
 };
 
 enum _mosquitto_protocol {
@@ -93,6 +94,7 @@ struct _mosquitto_packet{
     uint8_t command;
     uint8_t have_remaining;
     uint8_t remaining_count;
+    uint8_t is_ws_packet;
     uint16_t mid;
     uint32_t remaining_mult;
     uint32_t remaining_length;
@@ -118,6 +120,7 @@ struct mosquitto {
     bool clean_subs;
     // DXL End
     int sock;
+    int ws_sock;
     enum _mosquitto_protocol protocol;
     char *address;
     char *id;
@@ -172,6 +175,10 @@ struct mosquitto {
     // DXL Begin
     uint8_t dxl_flags;
     // DXL End
+    void* wsi; // Websocket instance
 };
+
+// Helper macro to check if context has valid connection information or not
+#define IS_CONTEXT_INVALID(mosq) ((mosq->sock == INVALID_SOCKET) && !mosq->wsi)
 
 #endif

@@ -13,15 +13,16 @@ namespace broker {
 Broker::Broker( const std::string &brokerId, const std::string &hostname, uint32_t port,
     uint32_t ttl, uint32_t startTime, const std::string& policyHostname, 
     const std::string& policyIpAddress, const std::string& policyHubName, uint32_t policyPort,
-    const std::string& brokerVersion,
+    uint32_t webSocketPort, const std::string& brokerVersion,
     uint32_t connectionLimit,
-    bool topicRoutingEnabled ) : BrokerBase( brokerId, hostname, port ), 
+    bool topicRoutingEnabled ) : BrokerBase( brokerId, hostname, port ),
     m_ttl(ttl),
     m_startTime(startTime),
     m_policyHostname( policyHostname ),
     m_policyIpAddress( policyIpAddress ),
     m_policyHubName( policyHubName ),
     m_policyPort( policyPort ),
+    m_webSocketPort( webSocketPort ),
     m_brokerVersion(brokerVersion),
     m_connectionLimit( connectionLimit ),
     m_topicRoutingEnabled( topicRoutingEnabled )
@@ -70,6 +71,13 @@ uint32_t Broker::getPolicyPort() const
 }
 
 /** {@inheritDoc} */
+uint32_t Broker::getWebSocketPort() const
+{
+    return isLocalBroker() ?
+        BrokerRegistry::getInstance().getLocalBrokerWebSocketPort() : m_webSocketPort;
+}
+
+/** {@inheritDoc} */
 uint32_t Broker::getConnectionLimit() const
 {
     return isLocalBroker() ? 
@@ -89,7 +97,8 @@ std::ostream & operator <<( std::ostream &out, const Broker &broker )
     return out << 
         broker.getId() << ", " << 
         broker.getHostname() << ", " << 
-        broker.getPort() << ", " << 
+        broker.getPort() << ", " <<
+        broker.getWebSocketPort() << ", " <<
         broker.getTtl() << ", " << 
         broker.getStartTime() << ", " << 
         broker.getPolicyHostName() << ", " <<

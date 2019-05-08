@@ -41,6 +41,9 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include "mosquitto_broker.h"
 
+// Size of extra buffer that LWS requires prior to user data buffer.
+extern int g_ws_pre_buffer_size;
+
 int _mosquitto_packet_alloc(struct _mosquitto_packet *packet)
 {
     uint8_t remaining_bytes[5], byte;
@@ -64,8 +67,22 @@ int _mosquitto_packet_alloc(struct _mosquitto_packet *packet)
     }while(remaining_length > 0 && packet->remaining_count < 5);
     if(packet->remaining_count == 5) return MOSQ_ERR_PAYLOAD_SIZE;
     packet->packet_length = packet->remaining_length + 1 + packet->remaining_count;
-    packet->payload = (uint8_t *)_mosquitto_malloc(sizeof(uint8_t)*packet->packet_length);
-    if(!packet->payload) return MOSQ_ERR_NOMEM;
+    if(packet->is_ws_packet) {
+        // Libwebsockets lws_send() requires a "pre" region prior to the buffer being used for sending.
+        // So, preallocate it right now.
+        packet->payload = (uint8_t *)_mosquitto_malloc(
+                    sizeof(uint8_t)*packet->packet_length + g_ws_pre_buffer_size);
+        if(!packet->payload) return MOSQ_ERR_NOMEM;
+
+        // The pre-allocated region is for LWS internal purpose.
+        // Set payload to the region where we are allowed to use.
+        packet->payload = packet->payload + g_ws_pre_buffer_size;
+    }
+    else {
+        packet->payload = (uint8_t *)_mosquitto_malloc(sizeof(uint8_t)*packet->packet_length);
+        if(!packet->payload) return MOSQ_ERR_NOMEM;
+    }
+    
 
     packet->payload[0] = packet->command;
     for(i=0; i<packet->remaining_count; i++){
@@ -96,7 +113,7 @@ void _mosquitto_check_keepalive(struct mosquitto *mosq)
     }
     last_msg_out = mosq->last_msg_out;
     last_msg_in = mosq->last_msg_in;
-    if(mosq->keepalive && mosq->sock != INVALID_SOCKET &&
+    if(mosq->keepalive && (!IS_CONTEXT_INVALID(mosq)) &&
             (now - last_msg_out >= mosq->keepalive || now - last_msg_in >= mosq->keepalive)){
 
         if(mosq->state == mosq_cs_connected && mosq->ping_t == 0){

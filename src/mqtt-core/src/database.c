@@ -128,6 +128,44 @@ void mqtt3_dxl_set_max_packet_buffer_size(uint64_t maxBufferSize)
 }
 // DXL End
 
+int mqtt3_db_add_new_context(struct mosquitto_db* db, struct mosquitto* new_context)
+{
+    int i;
+
+    for(i=0; i<db->context_count; i++){
+        if(db->contexts[i] == NULL){
+            db->contexts[i] = new_context;
+            new_context->numericId = i; // DXL
+            if(!new_context->wsi){
+                mosquitto_add_new_clients_set(new_context); // Loop OPT
+            }
+            break;
+        }
+    }
+    if(i==db->context_count){
+        struct mosquitto **tmp_contexts = (struct mosquitto **)_mosquitto_realloc(
+            db->contexts, sizeof(struct mosquitto*)*(db->context_count+CONTEXT_REALLOC_SIZE));
+        if(tmp_contexts){
+            memset(tmp_contexts+db->context_count, 0, (CONTEXT_REALLOC_SIZE*sizeof(struct mosquitto*)));  
+            db->context_count+=CONTEXT_REALLOC_SIZE;
+            db->contexts = tmp_contexts;
+            db->contexts[i] = new_context;
+            new_context->numericId = i; // DXL
+            if(!new_context->wsi){
+                mosquitto_add_new_clients_set(new_context); // Loop OPT
+            }
+        }else{
+            // Out of memory
+            mqtt3_context_cleanup(NULL, new_context, true, true /* DXL */);
+            return -1;
+        }
+    }
+    // If we got here then the context's DB index is "i" regardless of how we got here
+    new_context->db_index = i;
+
+    return 0;
+}
+
 int mqtt3_db_open(struct mqtt3_config *config, struct mosquitto_db *db)
 {
     int rc = 0;
@@ -257,7 +295,7 @@ int mqtt3_db_client_count(struct mosquitto_db *db, unsigned int *count, unsigned
     for(i=0; i<db->context_count; i++){
         if(db->contexts[i]){
             (*count)++;
-            if(db->contexts[i]->sock == INVALID_SOCKET){
+            if(IS_CONTEXT_INVALID(db->contexts[i])){
                 (*inactive_count)++;
             }
         }
@@ -356,7 +394,7 @@ int mqtt3_db_message_insert(struct mosquitto_db *db, struct mosquitto *context, 
     if(!context) return MOSQ_ERR_INVAL;
 
 
-    if(context->sock == INVALID_SOCKET){
+    if(IS_CONTEXT_INVALID(context)){
         /* Client is not connected only queue messages with QoS>0. */
         if(qos == 0 && !db->config->queue_qos0_messages){
             if(!context->bridge){
@@ -369,7 +407,7 @@ int mqtt3_db_message_insert(struct mosquitto_db *db, struct mosquitto *context, 
         }
     }
 
-    if(context->sock != INVALID_SOCKET){
+    if(!IS_CONTEXT_INVALID(context)){
 #ifdef PACKET_COUNT
         if(context->packet_count >= _max_packet_buffer_size){
             // The packet count has been exceeded, see if we are going to drop the 
@@ -866,7 +904,7 @@ int mqtt3_db_message_write(struct mosquitto *context)
     const void *payload;
     int msg_count = 0;
 
-    if(!context || context->sock == -1
+    if(!context || IS_CONTEXT_INVALID(context)
             || (context->state == mosq_cs_connected && !context->id)){
         return MOSQ_ERR_INVAL;
     }

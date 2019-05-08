@@ -48,7 +48,7 @@ struct mosquitto *mqtt3_context_init(int sock)
     if(!context) return NULL;
     
     context->state = mosq_cs_new;
-    context->sock = sock;
+    context->sock = sock;    
     context->last_msg_in = mosquitto_time();
     context->last_msg_out = mosquitto_time();
     context->keepalive = 60; /* Default to 60s */
@@ -98,8 +98,10 @@ struct mosquitto *mqtt3_context_init(int sock)
     context->dxl_tenant_guid = NULL;
     context->cert_hashes = NULL;
     context->epoll_events = 0; // EPOLL
-    context->dxl_flags = 0;
+    context->dxl_flags = 0;    
     // DXL End
+    context->wsi = NULL;
+    context->ws_sock = INVALID_SOCKET;
 
     return context;
 }
@@ -111,7 +113,7 @@ struct mosquitto *mqtt3_context_init(int sock)
  * versions for example.
  */
 void mqtt3_context_cleanup(struct mosquitto_db *db, struct mosquitto *context, bool do_free, bool clean_subs /* DXL */)
-{
+{    
     struct _mosquitto_packet *packet;
     struct mosquitto_client_msg *msg, *next;
     struct _clientid_index_hash *find_cih;
@@ -133,6 +135,12 @@ void mqtt3_context_cleanup(struct mosquitto_db *db, struct mosquitto *context, b
         _mosquitto_socket_close(context);
         context->listener = NULL;
     }
+
+    if(context->wsi){
+        context->state = mosq_cs_ws_dead;
+        mosquitto_ws_request_writeable_callback(context);
+    }
+
     if(context->clean_session && db){
         // DXL Begin
         if(clean_subs){
@@ -223,6 +231,8 @@ void mqtt3_context_cleanup(struct mosquitto_db *db, struct mosquitto *context, b
 #endif
     }
     if(do_free){
+        context->wsi = NULL;
+        context->ws_sock = INVALID_SOCKET;
         _mosquitto_free(context);
     }
 }

@@ -44,6 +44,7 @@ bool BrokerStateEventHandler::onStoreMessage(
             brokerStateEventPayload.getPort(),
             brokerStateEventPayload.getTtlMins(),
             brokerStateEventPayload.getStartTime(),
+            brokerStateEventPayload.getWebSocketPort(),
             brokerStateEventPayload.getPolicyHostname(),
             brokerStateEventPayload.getPolicyIpAddress(),
             brokerStateEventPayload.getPolicyHubName(),

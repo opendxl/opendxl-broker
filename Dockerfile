@@ -28,6 +28,17 @@ RUN cd /tmp \
     && make \
     && make install
 
+# libwebsockets
+RUN cd /tmp \
+    && wget https://github.com/opendxl-community/libwebsockets/archive/v3.1-stable-opendxl-2.tar.gz \
+    && tar xvzf v3.1-stable-opendxl-2.tar.gz \
+    && cd libwebsockets-3.1-stable-opendxl-2 \
+    && cmake -DCMAKE_BUILD_TYPE=release -DLWS_IPV6=On -DLWS_WITH_STATIC=ON \
+        -DLWS_WITH_SHARED=OFF -DLWS_WITHOUT_TESTAPPS=ON -G "Unix Makefiles" \
+    && make \
+    && make install
+
+
 # Build broker
 COPY src /tmp/src
 RUN cd /tmp/src && make
@@ -80,15 +91,17 @@ RUN adduser --home /dxlbroker --disabled-password --gecos "" dxl \
 
 # Ensure script is executable
 RUN chmod +x /dxlbroker/startup.sh
+RUN chmod +x /dxlbroker/startup_as_root.sh
 
 # Expose the volume
 VOLUME ["/dxlbroker-volume"]
 
-# Set user
-USER dxl
-
 # Expose ports
 EXPOSE 8883
 EXPOSE 8443
+EXPOSE 443
 
-ENTRYPOINT ["/dxlbroker/startup.sh"]
+# Set user
+#USER root
+
+ENTRYPOINT ["/dxlbroker/startup_as_root.sh"]

@@ -54,6 +54,12 @@ POSSIBILITY OF SUCH DAMAGE.
 // DXL
 #define CONTEXT_REALLOC_SIZE 0xFFF
 
+/* Flag to track listener contexts */
+#define MOSQUITTO_EPOLL_DATA_LISTENER_FLAG   0x0000000080000000
+
+/* Flag for tracking websockets */
+#define MOSQUITTO_EPOLL_DATA_WEBSOCKETS_FLAG 0x0000000100000000
+
 typedef uint64_t dbid_t;
 
 struct _mqtt3_listener {
@@ -98,6 +104,8 @@ struct mqtt3_config {
     bool verbose;
     struct _mqtt3_bridge *bridges;
     int bridge_count;
+    bool ws_enabled;
+    int ws_port;
 };
 
 struct _mosquitto_subleaf {
@@ -232,6 +240,10 @@ struct _mqtt3_bridge{
  * Main functions
  * ============================================================ */
 // DXL Begin
+int mosquitto_epoll_init();
+void mosquitto_epoll_destroy();
+bool mosquitto_epoll_flag_is_listener(struct epoll_event *event);
+bool mosquitto_epoll_flag_is_websocket(struct epoll_event *event);
 int mosquitto_main_loop(struct mosquitto_db *db);
 int mosquitto_get_listensock_count();
 int* mosquitto_get_listensocks();
@@ -366,6 +378,7 @@ void mqtt3_db_remove_canonical_client_id(const char* clientid );
 int mqtt3_db_get_canonical_client_id_count(const char* clientid);
 int mqtt3_dxl_db_client_count(struct mosquitto_db *db);
 void mqtt3_dxl_set_max_packet_buffer_size(uint64_t maxBufferSize );
+int mqtt3_db_add_new_context(struct mosquitto_db* db, struct mosquitto* new_context);
 // DXL End
 int mqtt3_db_client_count(struct mosquitto_db *db, unsigned int *count, unsigned int *inactive_count);
 void mqtt3_db_limits_set(int inflight, int queued);
@@ -448,6 +461,25 @@ void mqtt3_set_default_bridge_keepalive(int keepalive); // DXL
 int mqtt3_bridge_new(struct mosquitto_db *db, struct _mqtt3_bridge *bridge);
 int mqtt3_bridge_connect(struct mosquitto_db *db, struct mosquitto *context);
 void mqtt3_bridge_packet_cleanup(struct mosquitto *context);
+
+/* ============================================================
+ * Websockets functions
+ * ============================================================ */
+void mosquitto_ws_init(struct mqtt3_config *config);
+void mosquitto_ws_destroy();
+void mosquitto_ws_request_writeable_callback(struct mosquitto *mosq);
+int mosquitto_ws_write(struct mosquitto *mosq, uint8_t* buf, uint32_t len);
+int mosquitto_ws_add_fd(int sock, struct epoll_event* event);
+int mosquitto_ws_mod_fd(int sock, struct epoll_event* event);
+int mosquitto_ws_del_fd(int sock);
+void mosquitto_ws_handle_poll(struct epoll_event* event);
+void mosquitto_ws_do_maintenance();
+
+/* ============================================================
+ * SSL functions
+ * ============================================================ */
+int mosquitto_process_client_certificate(X509_STORE_CTX *ctx, struct mosquitto *context);
+
 
 /* ============================================================
  * Window service related functions

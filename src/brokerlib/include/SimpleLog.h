@@ -296,6 +296,10 @@ public:
 
         theText += " ";
         theText += stream.str();
+        if(theText.at( theText.size() - 1 ) == '\n')
+        {
+            theText.erase( theText.size() - 1 );
+        }
         writeTxt( end, theText );
 
         if( end == errorthrow )
