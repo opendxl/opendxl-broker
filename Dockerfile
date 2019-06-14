@@ -30,9 +30,9 @@ RUN cd /tmp \
 
 # libwebsockets
 RUN cd /tmp \
-    && wget https://github.com/opendxl-community/libwebsockets/archive/v3.1-stable-opendxl-3.tar.gz \
-    && tar xvzf v3.1-stable-opendxl-3.tar.gz \
-    && cd libwebsockets-3.1-stable-opendxl-3 \
+    && wget https://github.com/opendxl-community/libwebsockets/archive/v3.1-stable-opendxl-4.tar.gz \
+    && tar xvzf v3.1-stable-opendxl-4.tar.gz \
+    && cd libwebsockets-3.1-stable-opendxl-4 \
     && cmake -DCMAKE_BUILD_TYPE=release -DLWS_IPV6=On -DLWS_WITH_STATIC=ON \
         -DLWS_WITH_SHARED=OFF -DLWS_WITHOUT_TESTAPPS=ON -G "Unix Makefiles" \
     && make \
