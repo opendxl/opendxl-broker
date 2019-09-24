@@ -56,13 +56,15 @@ extern struct mosquitto_db int_db;
 static int log_destinations = MQTT3_LOG_STDERR;
 // DXL, non static
 int log_priorities = MOSQ_LOG_ERR | MOSQ_LOG_WARNING | MOSQ_LOG_NOTICE | MOSQ_LOG_INFO;
+unsigned int log_category_mask = 0;
 
-int mqtt3_log_init(int priorities, int destinations)
+int mqtt3_log_init(int priorities, int destinations, unsigned int category_mask)
 {
     int rc = 0;
 
     log_priorities = priorities;
     log_destinations = destinations;
+    log_category_mask = category_mask;
 
     return rc;
 }

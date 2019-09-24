@@ -62,6 +62,9 @@ extern "C" {
 #define MOSQ_LOG_UNSUBSCRIBE 0x40
 #define MOSQ_LOG_ALL 0xFFFF
 
+/* Log categories */
+#define MOSQ_LOG_CATEGORY_WEBSOCKETS 0x01
+
 /* Error values */
 enum mosq_err_t {
     MOSQ_ERR_CONN_PENDING = -1,

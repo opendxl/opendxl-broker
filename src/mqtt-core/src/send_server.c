@@ -55,7 +55,7 @@ int _mosquitto_send_connack(struct mosquitto *context, int result)
 
     packet->command = CONNACK;
     packet->remaining_length = 2;
-    if(context->wsi) packet->is_ws_packet = 1;
+    if(context && context->wsi) packet->is_ws_packet = 1;
     rc = _mosquitto_packet_alloc(packet);
     if(rc){
         _mosquitto_free(packet);

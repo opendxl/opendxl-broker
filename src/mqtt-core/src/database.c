@@ -559,6 +559,7 @@ int mqtt3_db_messages_delete(struct mosquitto *context)
     context->last_msg = NULL;
     context->msg_count = 0;
     context->msg_count12 = 0;
+    context->subscription_count = 0;
 
     return MOSQ_ERR_SUCCESS;
 }
@@ -706,6 +707,7 @@ int mqtt3_db_message_reconnect_reset(struct mosquitto *context)
     msg = context->msgs;
     context->msg_count = 0;
     context->msg_count12 = 0;
+    context->subscription_count = 0;
     while(msg){
         context->last_msg = msg;
 

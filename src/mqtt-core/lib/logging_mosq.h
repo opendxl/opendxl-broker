@@ -34,6 +34,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 // DXL Begin
 extern int log_priorities;
+extern unsigned int log_category_mask;
 #define IS_INFO_ENABLED (log_priorities & MOSQ_LOG_INFO)
 #define IS_DEBUG_ENABLED (log_priorities & MOSQ_LOG_DEBUG)
 #define IS_LOGLEVEL_ENABLED(X) (log_priorities & (X))

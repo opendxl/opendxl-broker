@@ -6,7 +6,7 @@
 #include "include/BrokerSettings.h"
 #include "message/include/DxlMessageConstants.h"
 #include "message/include/DxlMessageService.h"
-#include "message/payload/include/TenantExceedsByteLimitEventPayload.h"
+#include "message/payload/include/TenantExceedsLimitEventPayload.h"
 #include "metrics/include/TenantMetricsService.h"
 
 using namespace std;
@@ -68,12 +68,7 @@ bool TenantMetricsService::updateTenantSentByteCount( const char* tenantId, uint
                 << tenantId << ", total=" << total << ", limit=" << limit << SL_INFO_END;
         }
 
-        // Fire event
-        DxlMessageService& messageService = DxlMessageService::getInstance();
-        shared_ptr<DxlEvent> evt = messageService.createEvent();
-        TenantExceedsByteLimitEventPayload payload( tenantId );
-        evt->setPayload( payload );
-        messageService.sendMessage( DxlMessageConstants::CHANNEL_DXL_TENANT_LIMIT_EXCEEDED_EVENT, *evt );
+        TenantMetricsService::sendLimitExceededEvent( tenantId, TenantExceedsLimitEventPayload::TENANT_LIMIT_BYTE );
     }
 
     //SL_START << "(byte limit) Tenant: " << tenantId << ", total=" << total << ", limit=" << limit << SL_ERROR_END;
@@ -82,34 +77,53 @@ bool TenantMetricsService::updateTenantSentByteCount( const char* tenantId, uint
 }
 
 /** {@inheritDoc} */
-void TenantMetricsService::updateTenantConnectionCount( const char* tenantId, int adjCount )
+bool TenantMetricsService::checkTenantWithinLimit( const char* tenantId, int limit,
+        const unordered_map<std::string,int>& counts ) const
 {
-    // Determine tenant limit
-    int limit = (int)BrokerSettings::getTenantConnectionLimit();
 
     // Limit of 0 means unlimited
     if( limit == 0 )
     {
-        return;
+        return true;
     }
 
-    // Lookup the total for the tenant
-    auto f = m_connectionsPerTenant.find( tenantId );
-    if( f == m_connectionsPerTenant.end() )
+    auto f = counts.find( tenantId );
+    if( f == counts.end() )
+    {
+        return true;
+    }
+
+    return f->second < limit;
+}
+
+/** {@inheritDoc} */
+bool TenantMetricsService::updateTenantLimitCount( const char* tenantId, int adjCount,
+            int limit, unordered_map<std::string,int>& counts  )
+{
+    // Limit of 0 means unlimited
+    if( limit == 0 )
+    {
+        return true;
+    }
+
+    // Lookup the total services for the tenant
+    auto f = counts.find( tenantId );
+    if( f == counts.end() )
     {
         // New tenant entry
-        m_connectionsPerTenant.insert( make_pair( tenantId, 0 ) );
-        f = m_connectionsPerTenant.find( tenantId );
-        if( f == m_connectionsPerTenant.end() )
+        counts.insert( make_pair( tenantId, 0 ) );
+        f = counts.find( tenantId );
+        if( f == counts.end() )
         {
             // Should never happen
-            return;
+            return true;
         }
+
     }
 
     int oldCount = f->second;
-    
-    f->second += adjCount;    
+
+    f->second += adjCount;
     if( f->second < 0 )
     {
         f->second = 0;
@@ -121,10 +135,28 @@ void TenantMetricsService::updateTenantConnectionCount( const char* tenantId, in
 
     if( ( oldCount != f->second ) && ( f->second >= limit ) )
     {
+        return false;
+    }
+
+    //SL_START << "(limit) Tenant: " << tenantId << ", total=" <<  f->second << ", limit=" << limit << SL_ERROR_END;
+
+    return true;
+}
+
+/** {@inheritDoc} */
+void TenantMetricsService::updateTenantConnectionCount( const char* tenantId, int adjCount )
+{
+    // Determine tenant limit
+    int limit = (int)BrokerSettings::getTenantConnectionLimit();
+
+    if( !TenantMetricsService::updateTenantLimitCount( tenantId, adjCount, limit, m_connectionsPerTenant ) )
+    {
         if( SL_LOG.isInfoEnabled() )
         {
             SL_START << "Tenant reached connection limit, Tenant: " 
-                << tenantId << ", total=" << f->second << ", limit=" << limit << SL_INFO_END;
+                << tenantId << ", limit=" << limit << SL_INFO_END;
+
+            TenantMetricsService::sendLimitExceededEvent( tenantId, TenantExceedsLimitEventPayload::TENANT_LIMIT_CONNECTIONS );
         }
     }
 
@@ -134,22 +166,49 @@ void TenantMetricsService::updateTenantConnectionCount( const char* tenantId, in
 /** {@inheritDoc} */
 bool TenantMetricsService::isConnectionAllowed( const char* tenantId ) const
 {
+    return TenantMetricsService::checkTenantWithinLimit( tenantId,
+                (int)BrokerSettings::getTenantConnectionLimit(), m_connectionsPerTenant );
+}
+
+/** {@inheritDoc} */
+void TenantMetricsService::updateTenantServiceCount( const char* tenantId, int adjCount )
+{
     // Determine tenant limit
-    int limit = (int)BrokerSettings::getTenantConnectionLimit();
+    int limit = (int)BrokerSettings::getTenantServiceLimit();
 
-    // Limit of 0 means unlimited
-    if( limit == 0 )
+    if( !TenantMetricsService::updateTenantLimitCount( tenantId, adjCount, limit, m_servicesPerTenant ) )
     {
-        return true;
+        if( SL_LOG.isInfoEnabled() )
+        {
+            SL_START << "Tenant reached service limit, Tenant: "
+                << tenantId << ", limit=" << limit << SL_INFO_END;
+
+            TenantMetricsService::sendLimitExceededEvent( tenantId, TenantExceedsLimitEventPayload::TENANT_LIMIT_SERVICES );
+        }
     }
 
-    auto f = m_connectionsPerTenant.find( tenantId );
-    if( f == m_connectionsPerTenant.end() )
+    //SL_START << "(service limit) Tenant: " << tenantId << ", total=" <<  f->second << ", limit=" << limit << SL_ERROR_END;
+}
+
+/** {@inheritDoc} */
+bool TenantMetricsService::isServiceRegistrationAllowed( const char* tenantId ) const
+{
+    return TenantMetricsService::checkTenantWithinLimit( tenantId,
+                (int)BrokerSettings::getTenantServiceLimit(), m_servicesPerTenant );
+}
+
+/** {@inheritDoc} */
+bool TenantMetricsService::isTenantSubscriptionAllowed( const char* tenantGuid, int subscriptionCount ) const
+{
+    bool subscriptionAllowed = BrokerSettings::getTenantClientSubscriptionLimit() == 0 ||
+        subscriptionCount < BrokerSettings::getTenantClientSubscriptionLimit();
+
+    if( !subscriptionAllowed )
     {
-        return true;
+        TenantMetricsService::sendLimitExceededEvent( tenantGuid, TenantExceedsLimitEventPayload::TENANT_LIMIT_SUBSCRIPTIONS );
     }
 
-    return f->second < limit;
+    return subscriptionAllowed;
 }
 
 /** {@inheritDoc} */
@@ -187,4 +246,27 @@ void TenantMetricsService::markTenantExceedsByteCount( const char* tenantId )
 void TenantMetricsService::resetTenantByteCounts()
 {
     m_sentBytesPerTenant.clear();
+}
+
+/** {@inheritDoc} */
+void TenantMetricsService::sendLimitExceededEvent( const char* tenantId, const char* limitType ) const
+{
+    try
+    {
+        // TODO: Throttle these so they won't spam
+        // Fire event
+        DxlMessageService& messageService = DxlMessageService::getInstance();
+        shared_ptr<DxlEvent> evt = messageService.createEvent();
+        TenantExceedsLimitEventPayload payload( tenantId, limitType );
+        evt->setPayload( payload );
+        messageService.sendMessage( DxlMessageConstants::CHANNEL_DXL_TENANT_LIMIT_EXCEEDED_EVENT, *evt );
+    }
+    catch( const exception& ex )
+    {
+        SL_START << "Error while sending limitExceeded event, " << ex.what() << SL_ERROR_END;
+    }
+    catch( ... )
+    {
+        SL_START << "Error while sending limitExceeded event, unknown exception" << SL_ERROR_END;
+    }
 }

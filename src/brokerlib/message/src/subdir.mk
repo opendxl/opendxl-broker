@@ -41,7 +41,7 @@ OBJS += \
 	message/handler/src/ServiceRegistryRegisterRequestHandler.o \
 	message/handler/src/ServiceRegistryUnregisterEventHandler.o \
 	message/handler/src/ServiceRegistryUnregisterRequestHandler.o \
-	message/handler/src/TenantExceedsByteLimitEventHandler.o \
+	message/handler/src/TenantExceedsLimitEventHandler.o \
 	message/handler/src/TenantLimitResetEventHandler.o \
 	message/payload/src/AbstractBrokerTopicEventPayload.o \
 	message/payload/src/BrokerHealthRequestPayload.o \
@@ -65,4 +65,4 @@ OBJS += \
 	message/payload/src/ServiceRegistryQueryRequestPayload.o \
 	message/payload/src/ServiceRegistryQueryResponsePayload.o \
 	message/payload/src/ServiceRegistryQueryResponseServicePayload.o \
-	message/payload/src/TenantExceedsByteLimitEventPayload.o
+	message/payload/src/TenantExceedsLimitEventPayload.o

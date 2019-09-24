@@ -8,10 +8,12 @@
 #include "message/include/DxlEvent.h"
 #include "message/include/DxlMessageService.h"
 #include "message/include/DxlMessageConstants.h"
+#include "message/include/dxl_error_message.h"
 #include "message/handler/include/ServiceRegistryRegisterRequestHandler.h"
 #include "message/payload/include/ServiceRegistryRegisterEventPayload.h"
 #include "serviceregistry/include/ServiceRegistry.h"
 #include "DxlFlags.h"
+#include "metrics/include/TenantMetricsService.h"
 
 using namespace std;
 using namespace dxl::broker::json;
@@ -19,6 +21,7 @@ using namespace dxl::broker::message::handler;
 using namespace dxl::broker::message::payload;
 using namespace dxl::broker::core;
 using namespace dxl::broker::service;
+using namespace dxl::broker::metrics;
 
 /** {@inheritDoc} */
 bool ServiceRegistryRegisterRequestHandler::onStoreMessage(
@@ -88,12 +91,30 @@ bool ServiceRegistryRegisterRequestHandler::onStoreMessage(
         new ServiceRegistration( registerPayload.getServiceRegistration() ) );    
     reg->setBrokerService( context->getContextFlags() & DXL_FLAG_LOCAL );
 
-    // Register the service
-    ServiceRegistry::getInstance().registerService( reg );
+    DxlMessageService& messageService = DxlMessageService::getInstance();
+    shared_ptr<DxlResponse> response;
 
-    // Send a response to the invoking client
-    DxlMessageService& messageService = DxlMessageService::getInstance();    
-    shared_ptr<DxlResponse> response = messageService.createResponse( request );
+    // Check if the service limit has been exceeded in multi-tenant
+    if( !BrokerSettings::isMultiTenantModeEnabled() ||
+                context->isSourceOps() ||
+                TenantMetricsService::getInstance().isServiceRegistrationAllowed( reg->getClientTenantGuid().c_str() ) )
+    {
+        // Register the service
+        ServiceRegistry::getInstance().registerService( reg );
+
+        // Send a response to the invoking client
+        response = messageService.createResponse( request );
+    }
+    else
+    {
+        // Send an error response to the invoking client as its tenant limit is exceeded
+        int isFabricError;
+        response = messageService.createErrorResponse(
+                      request,
+                      FABRICSERVICELIMITEXCEEDED,
+                      getMessage( FABRICSERVICELIMITEXCEEDED, &isFabricError )
+                  );
+    }
     messageService.sendMessage( request->getReplyToTopic(), *response );
 
     // Do not propagate the request, we send an event to the other brokers

@@ -174,6 +174,7 @@ struct mosquitto {
     uint32_t epoll_events;
     // DXL Begin
     uint8_t dxl_flags;
+    int subscription_count;
     // DXL End
     void* wsi; // Websocket instance
 };

@@ -14,9 +14,9 @@
 
 #include "uthash.h"
 
-#define LOG_DEBUG(...) if(IS_DEBUG_ENABLED) _mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, __VA_ARGS__)
-#define LOG_INFO(...) if(IS_INFO_ENABLED) _mosquitto_log_printf(NULL, MOSQ_LOG_INFO, __VA_ARGS__)
-#define LOG_ERROR(...) _mosquitto_log_printf(NULL, MOSQ_LOG_ERR, __VA_ARGS__)
+#define LOG_DEBUG(...) if(IS_DEBUG_ENABLED && IS_CATEGORY_ENABLED(MOSQ_LOG_CATEGORY_WEBSOCKETS)) _mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, __VA_ARGS__)
+#define LOG_INFO(...) if(IS_INFO_ENABLED && IS_CATEGORY_ENABLED(MOSQ_LOG_CATEGORY_WEBSOCKETS)) _mosquitto_log_printf(NULL, MOSQ_LOG_INFO, __VA_ARGS__)
+#define LOG_ERROR(...) if(IS_CATEGORY_ENABLED(MOSQ_LOG_CATEGORY_WEBSOCKETS)) _mosquitto_log_printf(NULL, MOSQ_LOG_ERR, __VA_ARGS__)
 
 int g_ws_pre_buffer_size = LWS_PRE;
 
@@ -42,12 +42,12 @@ static struct wsi_hash *wsi_context_map = NULL;
 
 // Per connection user data.
 struct libws_mqtt_data {
-	struct mosquitto *mosq;
+    struct mosquitto *mosq;
 };
 
 static int
 callback_mqtt(struct lws *wsi, enum lws_callback_reasons reason,
-			  void *user, void *in, size_t len);
+              void *user, void *in, size_t len);
 
 // Only mqtt and mqttv3.1 sub-protocols are supported.
 static struct lws_protocols protocols[] = {
@@ -71,7 +71,7 @@ static struct lws_protocols protocols[] = {
         1024 * 1024                             // TX packet size.
     },
 
-	{ NULL, NULL, 0, 0 } //terminator
+    { NULL, NULL, 0, 0 } //terminator
 };
 
 static struct lws_context_creation_info lws_ctx_info;
@@ -122,14 +122,14 @@ static const char* get_callback_reason_str(int reason)
 
 static int
 callback_mqtt(struct lws *wsi, enum lws_callback_reasons reason,
-			  void *user, void *in, size_t len)
+              void *user, void *in, size_t len)
 {
     struct libws_mqtt_data *data = (struct libws_mqtt_data *)user;
 
     LOG_DEBUG("Callback called. wsi[%p] reason[%d-%s] user[%p] in[%p] len[%zu]",
             (void*)wsi, reason, get_callback_reason_str(reason), user, in, len);
 
-	switch (reason) {
+    switch (reason) {
 
     case LWS_CALLBACK_WSI_CREATE:
     {
@@ -309,7 +309,7 @@ callback_mqtt(struct lws *wsi, enum lws_callback_reasons reason,
         break;
     }
 
-	case LWS_CALLBACK_ESTABLISHED:
+    case LWS_CALLBACK_ESTABLISHED:
     {
         if(!data){
             LOG_ERROR("Established: Data is NULL!");
@@ -341,10 +341,10 @@ callback_mqtt(struct lws *wsi, enum lws_callback_reasons reason,
             return -1;
         }
 
-		break;
+        break;
     }
 
-	case LWS_CALLBACK_SERVER_WRITEABLE:
+    case LWS_CALLBACK_SERVER_WRITEABLE:
     {
         int ret = 0;
 
@@ -358,18 +358,18 @@ callback_mqtt(struct lws *wsi, enum lws_callback_reasons reason,
         ret = _mosquitto_packet_write(data->mosq);
         LOG_DEBUG("Exiting LWS_CALLBACK_SERVER_WRITEABLE. wsi[%p]", (void*)wsi);
         return ret;
-		break;
+        break;
     }
 
-	case LWS_CALLBACK_RECEIVE:
+    case LWS_CALLBACK_RECEIVE:
     {
         int rc = 0;
 
         LOG_DEBUG("LWS_CALLBACK_RECEIVE: %4d (rpp %5d, first %d, last %d, bin %d)",
-			  (int)len, (int)lws_remaining_packet_payload(wsi),
-			  lws_is_first_fragment(wsi),
-			  lws_is_final_fragment(wsi),
-			  lws_frame_is_binary(wsi));
+              (int)len, (int)lws_remaining_packet_payload(wsi),
+              lws_is_first_fragment(wsi),
+              lws_is_final_fragment(wsi),
+              lws_frame_is_binary(wsi));
         
         if(!data || !data->mosq || (data->mosq->state == mosq_cs_ws_dead))
             return -1;
@@ -392,14 +392,14 @@ callback_mqtt(struct lws *wsi, enum lws_callback_reasons reason,
             mqtt3_context_disconnect(db, mosq);
             return rc;
         }
-		break;
+        break;
     }
 
     default:
-		break;
-	}
+        break;
+    }
 
-	return 0;
+    return 0;
 }
 
 int lws_to_mosq_log_level(int lws_level)
@@ -409,11 +409,10 @@ int lws_to_mosq_log_level(int lws_level)
             return MOSQ_LOG_ERR;
         case LLL_WARN:
             return MOSQ_LOG_WARNING;
-        case LLL_NOTICE:
-            return MOSQ_LOG_NOTICE;
+        // LWS INFO and NOTICE are quite noisy. So, it is treated as DEBUG level.
+        case LLL_NOTICE: /* Fall through */
         case LLL_INFO: /* Fall through */
-        case LLL_USER:
-            return MOSQ_LOG_INFO;
+        case LLL_USER: /* Fall through */
         case LLL_DEBUG:
             return MOSQ_LOG_DEBUG;
     }
@@ -422,7 +421,7 @@ int lws_to_mosq_log_level(int lws_level)
 
 void mqtt3_websockets_logger(int level, const char* line)
 {
-    if(IS_LOGLEVEL_ENABLED(lws_to_mosq_log_level(level))){
+    if(IS_LOGLEVEL_ENABLED(lws_to_mosq_log_level(level)) && IS_CATEGORY_ENABLED(MOSQ_LOG_CATEGORY_WEBSOCKETS)){
         _mosquitto_log_printf(NULL, lws_to_mosq_log_level(level), "<WS> %s", line);
     }
 }
@@ -430,20 +429,23 @@ void mqtt3_websockets_logger(int level, const char* line)
 void mosquitto_ws_init(struct mqtt3_config *config)
 {
 
-    int log_level = LLL_USER | LLL_ERR | LLL_WARN;
+    int log_level = 0;
+    if(IS_CATEGORY_ENABLED(MOSQ_LOG_CATEGORY_WEBSOCKETS)){
+        log_level = LLL_USER | LLL_ERR | LLL_WARN;
 
-    // LWS INFO and NOTICE are quite noisy. So, add them only if debug level logging is enabled.
-    if(IS_DEBUG_ENABLED)
-        log_level |= LLL_NOTICE | LLL_INFO | LLL_DEBUG; 
+        // LWS INFO and NOTICE are quite noisy. So, add them only if debug level logging is enabled.
+        if(IS_DEBUG_ENABLED)
+            log_level |= LLL_NOTICE | LLL_INFO | LLL_DEBUG; 
+    }
 
     lws_set_log_level(log_level, mqtt3_websockets_logger);
 
     memset(&lws_ctx_info, 0, sizeof lws_ctx_info);
     lws_ctx_info.port = config->ws_port;
     lws_ctx_info.protocols = protocols;
-	lws_ctx_info.pt_serv_buf_size = 1024 * 1024;
-	lws_ctx_info.options = LWS_SERVER_OPTION_VALIDATE_UTF8 |
-		LWS_SERVER_OPTION_HTTP_HEADERS_SECURITY_BEST_PRACTICES_ENFORCE | 
+    lws_ctx_info.pt_serv_buf_size = 1024 * 1024;
+    lws_ctx_info.options = LWS_SERVER_OPTION_VALIDATE_UTF8 |
+        LWS_SERVER_OPTION_HTTP_HEADERS_SECURITY_BEST_PRACTICES_ENFORCE | 
         LWS_SERVER_OPTION_IPV6_V6ONLY_MODIFY; // This enables single listener for both IPv4 and IPv6.
 
 

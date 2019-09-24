@@ -257,6 +257,7 @@ int main(int argc, char *argv[])
     int listenPort = 8883;
     uint64_t maxPacketBufferSize;
     int mosquittoLogType = 0;
+    unsigned int mosquittoLogCategoryMask = 0;
     int messageSizeLimit = 1048576;
     char* user = NULL;
     struct cert_hashes* brokerCertsUtHash = NULL;
@@ -276,6 +277,7 @@ int main(int argc, char *argv[])
         &maxPacketBufferSize,
         &listenPort,
         &mosquittoLogType,
+        &mosquittoLogCategoryMask,
         &messageSizeLimit,
         &user,
         &brokerCertsUtHash,
@@ -318,7 +320,8 @@ int main(int argc, char *argv[])
     mqtt3_config_update_tls(
         &config, tlsEnabled, tlsBridgingInsecure,
         clientCertChainFile, brokerCertChainFile,
-        brokerKeyFile, brokerCertFile, ciphers,
+        brokerKeyFile, 
+        brokerCertFile, ciphers,
         brokerCertsUtHash);
 
 
@@ -334,7 +337,7 @@ int main(int argc, char *argv[])
 
     /* Initialise logging only after initialising the database in case we're
      * logging to topics */
-    mqtt3_log_init(config.log_type, config.log_dest);
+    mqtt3_log_init(config.log_type, config.log_dest, config.log_category_mask);
 
     if(IS_INFO_ENABLED)
         _mosquitto_log_printf(NULL, MOSQ_LOG_INFO,"OpenDXL Broker %s.%s.%s (build %s) (core %s) (%s)",
@@ -352,7 +355,8 @@ int main(int argc, char *argv[])
 
     // DXL: Set mosquitto log types
     config.log_type = mosquittoLogType;
-    mqtt3_log_init(config.log_type, config.log_dest);
+    config.log_category_mask = mosquittoLogCategoryMask;
+    mqtt3_log_init(config.log_type, config.log_dest, config.log_category_mask);
     // DXL End
 
     // DXL: Set message size limit

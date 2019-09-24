@@ -547,7 +547,7 @@ int mqtt3_socket_listen(struct _mqtt3_listener *listener)
     }
 }
 
-int _mosquitto_socket_get_address(int sock, char *buf, int len)
+int _mosquitto_socket_get_address(int sock, char *buf, int len, int* port)
 {
     struct sockaddr_storage addr;
     socklen_t addrlen;
@@ -556,10 +556,16 @@ int _mosquitto_socket_get_address(int sock, char *buf, int len)
     if(!getpeername(sock, (struct sockaddr *)&addr, &addrlen)){
         if(addr.ss_family == AF_INET){
             if(inet_ntop(AF_INET, &((struct sockaddr_in *)&addr)->sin_addr.s_addr, buf, len)){
+                if(port){
+                    *port = ntohs(((struct sockaddr_in *)&addr)->sin_port);
+                }
                 return 0;
             }
         }else if(addr.ss_family == AF_INET6){
             if(inet_ntop(AF_INET6, &((struct sockaddr_in6 *)&addr)->sin6_addr.s6_addr, buf, len)){
+                if(port){
+                    *port = ntohs(((struct sockaddr_in6 *)&addr)->sin6_port);
+                }
                 return 0;
             }
         }

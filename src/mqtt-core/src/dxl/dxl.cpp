@@ -38,17 +38,19 @@ bool dxl_main(
     int argc, char *argv[], 
     bool* tlsEnabled, bool* tlsBridgingInsecure, bool* fipsEnabled,
     const char** clientCertChainFile, const char** brokerCertChainFile,
-    const char** brokerKeyFile, const char** brokerCertFile, const char** ciphers,
+    const char** brokerKeyFile, 
+    const char** brokerCertFile, const char** ciphers,
     uint64_t* maxPacketBufferSize, int* listenPort, int* mosquittoLogType,
-    int* messageSizeLimit, char** user,
+    unsigned int* mosquittoLogCategoryMask, int* messageSizeLimit, char** user,
     struct cert_hashes** brokerCertsUtHash,
     bool *webSocketsEnabled, int* webSocketsListenPort )
 {
     return dxl::broker::brokerlib_main(
         argc, argv, tlsEnabled, tlsBridgingInsecure, fipsEnabled,
         clientCertChainFile, brokerCertChainFile,
-        brokerKeyFile, brokerCertFile, ciphers, maxPacketBufferSize, listenPort, 
-        mosquittoLogType, messageSizeLimit, user,
+        brokerKeyFile, 
+        brokerCertFile, ciphers, maxPacketBufferSize, listenPort, 
+        mosquittoLogType, mosquittoLogCategoryMask, messageSizeLimit, user,
         brokerCertsUtHash,
         webSocketsEnabled, webSocketsListenPort );
 }
@@ -525,3 +527,8 @@ bool dxl_is_cert_revoked( const char* cert )
     return s_dxlInterface.isCertRevoked( cert );
 }
 
+/** {@inheritDoc} */
+bool dxl_is_tenant_subscription_allowed( struct mosquitto* context )
+{
+    return s_dxlInterface.isTenantSubscriptionAllowed( context->dxl_tenant_guid, context->subscription_count );
+}
