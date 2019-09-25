@@ -18,6 +18,8 @@ const char* getMessage(error_code_t errorNumber, int *isFabricError)
         case FABRICSERVICEUNAVAILABLE: return "unable to locate service for request";
         case FABRICSERVICEOVERLOADED: return "service is overloaded";
         case FABRICTIMEOUTRESPONSE: return "response timeout";
+        case FABRICSERVICELIMITEXCEEDED: return "service limit exceeded";
+        case FABRICSUBLIMITEXCEEDED: return "subscription limit exceeded";
         default: return "unknown error code";
     };
 }

@@ -114,6 +114,7 @@ const char* DxlMessageConstants::PROP_START_TIME = "startTime";
 const char* DxlMessageConstants::PROP_STATE = "state";
 const char* DxlMessageConstants::PROP_STRING = "string";
 const char* DxlMessageConstants::PROP_TARGET_TENANT_GUIDS = "targetTenantGuids";
+const char* DxlMessageConstants::PROP_TENANT_LIMIT_TYPE = "limitType";
 const char* DxlMessageConstants::PROP_TOPIC_ROUTING = "topicRouting";
 const char* DxlMessageConstants::PROP_TOPIC = "topic";
 const char* DxlMessageConstants::PROP_TOPICS = "topics";

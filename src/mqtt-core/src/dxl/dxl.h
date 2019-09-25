@@ -38,6 +38,7 @@ extern int NID_dxlTenantGuid;
  * @param   maxPacketBufferSize The maximum packet buffer size (out)
  * @param   listenPort The broker listener port (out)
  * @param   mosquittoLogType The mosquitto log types (out)
+ * @param   mosquittoLogCategoryMask The mosquitto log category mask (out)
  * @param   messageSizeLimit The mosquitto message size limit (out)
  * @param   user The user to run the broker as (out)
  * @param   brokerCertsUtHash List of broker certificate hashes (SHA-1) (out)
@@ -49,9 +50,10 @@ bool dxl_main(
     int argc, char *argv[], 
     bool* tlsEnabled, bool* tlsBridgingInsecure, bool* fipsEnabled,
     const char** clientCertChainFile, const char** brokerCertChainFile,
-    const char** brokerKeyFile, const char** brokerCertFile, const char** ciphers,
+    const char** brokerKeyFile, 
+    const char** brokerCertFile, const char** ciphers,
     uint64_t* maxPacketBufferSize, int* listenPort, int* mosquittoLogType,
-    int* messageSizeLimit, char** user,
+    unsigned int* mosquittoLogCategoryMask, int* messageSizeLimit, char** user,
     struct cert_hashes** brokerCertsUtHash,
     bool *webSocketsEnabled, int* webSocketsListenPort );
 
@@ -286,6 +288,14 @@ const char* dxl_get_broker_tenant_guid();
  * @return  Whether the specified certificate has been revoked
  */
 bool dxl_is_cert_revoked( const char* cert );
+
+/**
+ * Returns whether the tenant client subscription is allowed
+ *
+ * @param   context The connection context
+ * @return whether the tenant client subscription is allowed
+ */
+bool dxl_is_tenant_subscription_allowed( struct mosquitto* context );
 
 // used by dxl_check_connection_get_status
 #define dxl_check_connect_invalid -1

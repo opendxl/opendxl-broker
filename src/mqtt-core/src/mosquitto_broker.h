@@ -91,6 +91,7 @@ struct mqtt3_config {
     int listener_count;
     int log_dest;
     int log_type;
+    unsigned int log_category_mask;
     bool log_timestamp;
     char *log_file;
     FILE *log_fptr;
@@ -349,7 +350,7 @@ int _mosquitto_send_suback(struct mosquitto *context, uint16_t mid, uint32_t pay
  * Network functions
  * ============================================================ */
 int mqtt3_socket_accept(struct mosquitto_db *db, int listensock);
-int _mosquitto_socket_get_address(int sock, char *buf, int len);
+int _mosquitto_socket_get_address(int sock, char *buf, int len, int* port);
 int mqtt3_socket_listen(struct _mqtt3_listener *listener);
 
 /* ============================================================
@@ -449,8 +450,9 @@ extern int log_priorities;
 #define IS_WARNING_ENABLED (log_priorities & MOSQ_LOG_WARNING)
 #define IS_SUBSCRIBE_ENABLED (log_priorities & MOSQ_LOG_SUBSCRIBE)
 #define IS_UNSUBSCRIBE_ENABLED (log_priorities & MOSQ_LOG_UNSUBSCRIBE)
+#define IS_CATEGORY_ENABLED(C) (log_category_mask & (C))
 // DXL End
-int mqtt3_log_init(int level, int destinations);
+int mqtt3_log_init(int level, int destinations, unsigned int category_mask);
 int mqtt3_log_close(void);
 int _mosquitto_log_printf(struct mosquitto *mosq, int level, const char *fmt, ...) __attribute__((format(printf, 3, 4)));
 

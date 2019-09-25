@@ -168,6 +168,8 @@ struct DxlMessageConstants
     static const char* PROP_STRING;
     /** The target tenant GUIDs property */
     static const char* PROP_TARGET_TENANT_GUIDS;
+    /** The type of limit a tenant has exceeded */
+    static const char* PROP_TENANT_LIMIT_TYPE;
     /** Topic routing property */
     static const char* PROP_TOPIC_ROUTING;
     /** Topic property */

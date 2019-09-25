@@ -37,6 +37,7 @@ int BrokerSettings::sm_logFileMaxSize = 0;
 int BrokerSettings::sm_logFileMaxCount = 0;
 bool BrokerSettings::sm_logUseStdOut = false;
 string BrokerSettings::sm_logLevel;
+unsigned int BrokerSettings::sm_logCategoryMask = 0;
 bool BrokerSettings::sm_noticeLoggingEnabled = false;
 
 // Policy files
@@ -117,6 +118,12 @@ uint32_t BrokerSettings::sm_tenantByteLimit = 0;
 
 // The tenant connection limit
 uint32_t BrokerSettings::sm_tenantConnectionLimit = 0;
+
+// The tenant service limit
+uint32_t BrokerSettings::sm_tenantServiceLimit = 0;
+
+// The tenant client subscription limit
+uint32_t BrokerSettings::sm_tenantClientSubscriptionLimit = 0;
 
 // Whether to send events when clients connect/disconnect
 bool BrokerSettings::sm_sendConnectEvents = false;
@@ -224,6 +231,7 @@ string BrokerSettings::dumpSettings()
     out << "\tlogFileMaxCount: " << getLogFileMaxCount() << endl;    
     out << "\tlogUseStdOut: " << ( isStdOutLoggingEnabled() ? "true" : "false" ) << endl;    
     out << "\tlogLevel: " << getLogLevel() << endl;    
+    out << "\tlogCategoryMask: " << getLogCategoryMask() << endl;    
     out << "\tlogNotices: " << ( isNoticeLoggingEnabled() ? "true" : "false" ) << endl;    
     out << "\tpolicyGeneralStateFile: " << getPolicyGeneralStateFile() << endl;
     out << "\tpolicyBrokerStateFile: " << getPolicyBrokerStateFile() << endl;
@@ -260,7 +268,9 @@ string BrokerSettings::dumpSettings()
     if( isMultiTenantModeEnabled() )
     {
         out << "\ttenantByteLimit: " << getTenantByteLimit() << endl; 
-        out << "\ttenantConnectionLimit: " << getTenantConnectionLimit() << endl; 
+        out << "\ttenantConnectionLimit: " << getTenantConnectionLimit() << endl;
+        out << "\ttenantServiceLimit: " << getTenantServiceLimit() << endl;
+        out << "\ttenantClientSubscriptionLimit: " << getTenantClientSubscriptionLimit() << endl;
     }
     out << "\tisWebSocketsEnabled: " << ( isWebSocketsEnabled() ? "true" : "false" ) << endl;
     out << "\twebSocketsListenPort: " <<  getWebSocketsListenPort() << endl;
@@ -288,6 +298,8 @@ void BrokerSettings::setValuesFromConfig( const Configuration& config )
     config.getProperty("stdOutLogger", strValue, "false");
     sm_logUseStdOut = ( strValue == "true" );
     config.getProperty("logLevel", sm_logLevel, "warn");
+    config.getProperty("logCategoryMask", strValue, "0");
+    sm_logCategoryMask = (unsigned int) strtoul(strValue.c_str(), NULL, 0);
     config.getProperty("logNotices", strValue, "false");
     sm_noticeLoggingEnabled = ( strValue == "true" );
 
@@ -423,6 +435,14 @@ void BrokerSettings::setValuesFromConfig( const Configuration& config )
     // Tenant connection limit
     config.getProperty( "tenantConnectionLimit", strValue, "0" );
     sm_tenantConnectionLimit = atol( strValue.c_str() );
+
+    // Tenant service limit
+    config.getProperty( "tenantServiceLimit", strValue, "0" );
+    sm_tenantServiceLimit = atol( strValue.c_str() );
+
+    // Tenant client subscription limit
+    config.getProperty( "tenantClientSubscriptionLimit", strValue, "0" );
+    sm_tenantClientSubscriptionLimit = atol( strValue.c_str() );
 
     // Whether to send events when clients connect/disconnect
     config.getProperty( "sendConnectEvents", strValue, "false" );

@@ -72,7 +72,7 @@ struct mosquitto *mqtt3_context_init(int sock)
 
     context->address = NULL;
     if(sock != -1){
-        if(!_mosquitto_socket_get_address(sock, address, 1024)){
+        if(!_mosquitto_socket_get_address(sock, address, 1024, NULL)){
             context->address = _mosquitto_strdup(address);
         }
         if(!context->address){
@@ -98,7 +98,8 @@ struct mosquitto *mqtt3_context_init(int sock)
     context->dxl_tenant_guid = NULL;
     context->cert_hashes = NULL;
     context->epoll_events = 0; // EPOLL
-    context->dxl_flags = 0;    
+    context->dxl_flags = 0;
+    context->subscription_count = 0;
     // DXL End
     context->wsi = NULL;
     context->ws_sock = INVALID_SOCKET;
@@ -225,6 +226,7 @@ void mqtt3_context_cleanup(struct mosquitto_db *db, struct mosquitto *context, b
         // DXL start
         context->msg_count = 0;
         context->msg_count12 = 0;
+        context->subscription_count = 0;
         // DXL end
 #ifdef PACKET_COUNT
         context->packet_count = 0;

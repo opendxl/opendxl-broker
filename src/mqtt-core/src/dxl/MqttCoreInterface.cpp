@@ -418,11 +418,11 @@ bool MqttCoreInterface::isTenantLimited( const struct mosquitto* context ) const
 /** {@inheritDoc} */
 bool MqttCoreInterface::updateTenantSentByteCount( struct mosquitto* context, uint32_t byteCount ) const
 {
-    if( isTenantLimited( context ) )
-    {
-        return CoreInterface::updateTenantSentByteCount(
-            context->dxl_tenant_guid, byteCount );
-    }        
+        if( isTenantLimited( context ) )
+        {
+            return CoreInterface::updateTenantSentByteCount(
+                context->dxl_tenant_guid, byteCount );
+        }
 
     return false;
 }
@@ -430,20 +430,20 @@ bool MqttCoreInterface::updateTenantSentByteCount( struct mosquitto* context, ui
 /** {@inheritDoc} */
 void MqttCoreInterface::updateTenantConnectionCount( const struct mosquitto* context, int adjCount ) const
 {
-    if( isTenantLimited( context ) )
-    {
-        CoreInterface::updateTenantConnectionCount(
-            context->dxl_tenant_guid, adjCount );
-    }        
+        if( isTenantLimited( context ) )
+        {
+            CoreInterface::updateTenantConnectionCount(
+                context->dxl_tenant_guid, adjCount );
+        }
 }
 
 /** {@inheritDoc} */
 bool MqttCoreInterface::isTenantConnectionAllowed( const struct mosquitto* context ) const
 {
-    if( isTenantLimited( context ) )
-    {
-        return CoreInterface::isTenantConnectionAllowed( context->dxl_tenant_guid );
-    }        
+        if( isTenantLimited( context ) )
+        {
+            return CoreInterface::isTenantConnectionAllowed( context->dxl_tenant_guid );
+        }
 
     return true;
 }

@@ -135,6 +135,13 @@ public:
     static std::string getLogLevel() { return sm_logLevel; }
 
     /**
+     * Returns the logging category mask 
+     * 
+     * @return  The logging category mask
+     */
+    static unsigned int getLogCategoryMask() { return sm_logCategoryMask; }
+
+    /**
      * Returns the policy file for broker state
      *
      * @return  The policy file for broker state
@@ -459,6 +466,34 @@ public:
      */
     static void setTenantConnectionLimit( uint32_t limit ) { sm_tenantConnectionLimit = limit; }
 
+    /**
+     * Returns the tenant service limit
+     *
+     * @return  The tenant service limit
+     */
+    static uint32_t getTenantServiceLimit() { return sm_tenantServiceLimit; }
+
+    /**
+     * Sets the tenant service limit
+     *
+     * @param   limit The tenant service limit
+     */
+    static void setTenantServiceLimit( uint32_t limit ) { sm_tenantServiceLimit = limit; }
+
+    /**
+     * Returns the tenant client subscription limit
+     *
+     * @return  The tenant client subscription limit
+     */
+    static uint32_t getTenantClientSubscriptionLimit() { return sm_tenantClientSubscriptionLimit; }
+
+    /**
+     * Sets the tenant client subscription limit
+     *
+     * @param   limit The tenant client subscription limit
+     */
+    static void setTenantClientSubscriptionLimit( uint32_t limit ) { sm_tenantClientSubscriptionLimit = limit; }
+
     /** 
      * Whether to send events when clients connect/disconnect
      *
@@ -538,6 +573,8 @@ private:
     static bool sm_logUseStdOut;
     /** The log level */
     static std::string sm_logLevel;
+    /** The log category mask */
+    static unsigned int sm_logCategoryMask;
     /** Whether notice logging is enabled */
     static bool sm_noticeLoggingEnabled;
 
@@ -634,6 +671,12 @@ private:
 
     /** The tenant connection limit */
     static uint32_t sm_tenantConnectionLimit;
+
+    /** The tenant service limit */
+    static uint32_t sm_tenantServiceLimit;
+
+    /** The tenant client subscription limit */
+    static uint32_t sm_tenantClientSubscriptionLimit;
 
     /** Whether to send events when clients connect/disconnect */
     static bool sm_sendConnectEvents;

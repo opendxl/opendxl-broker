@@ -30,7 +30,7 @@
 #include "message/handler/include/ServiceRegistryRegisterRequestHandler.h"
 #include "message/handler/include/ServiceRegistryUnregisterEventHandler.h"
 #include "message/handler/include/ServiceRegistryUnregisterRequestHandler.h"
-#include "message/handler/include/TenantExceedsByteLimitEventHandler.h"
+#include "message/handler/include/TenantExceedsLimitEventHandler.h"
 #include "message/handler/include/TenantLimitResetEventHandler.h"
 #include "message/include/DxlMessageConstants.h"
 #include "core/include/CoreMessageHandlerService.h"
@@ -88,8 +88,8 @@ static ServiceRegistryRegisterRequestHandler s_serviceRegistryRegisterRequestHan
 static ServiceRegistryUnregisterEventHandler s_serviceRegistryUnregisterEventHandler;
 /** "Service registry: unregister" request handler */
 static ServiceRegistryUnregisterRequestHandler s_serviceRegistryUnregisterRequestHandler;
-/** "Tenant exceeds byte limit" event handler */
-static TenantExceedsByteLimitEventHandler s_tenantExceedsByteLimitEventHandler;
+/** "Tenant exceeds limit" event handler */
+static TenantExceedsLimitEventHandler s_tenantExceedsLimitEventHandler;
 /** "Tenant limit reset" event handler */
 static TenantLimitResetEventHandler s_tenantLimitResetEventHandler;
 
@@ -179,7 +179,7 @@ void DxlMessageHandlers::registerHandlers()
 
     handlerService.registerStoreHandler(
         DxlMessageConstants::CHANNEL_DXL_TENANT_LIMIT_EXCEEDED_EVENT,
-        &s_tenantExceedsByteLimitEventHandler );
+        &s_tenantExceedsLimitEventHandler );
 
     handlerService.registerStoreHandler(
         DxlMessageConstants::CHANNEL_DXL_TENANT_LIMIT_RESET_EVENT,

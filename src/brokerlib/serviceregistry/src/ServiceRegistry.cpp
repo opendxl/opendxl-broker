@@ -12,6 +12,7 @@
 #include "message/payload/include/ServiceRegistryRegisterEventPayload.h"
 #include "message/payload/include/ServiceRegistryUnregisterEventPayload.h"
 #include "serviceregistry/include/ServiceRegistry.h"
+#include "metrics/include/TenantMetricsService.h"
 
 #include <cstring>
 
@@ -20,6 +21,7 @@ using namespace std;
 using namespace dxl::broker;
 using namespace dxl::broker::message;
 using namespace dxl::broker::message::payload;
+using namespace dxl::broker::metrics;
 
 namespace dxl {
 namespace broker {
@@ -133,11 +135,19 @@ void ServiceRegistry::registerService( serviceRegistrationPtr_t reg )
         }
     }
 
-    // Check for event to request related properties
-    addEventToRequestPrefix( reg );
+    if( !BrokerSettings::isMultiTenantModeEnabled() || reg->isOps() )
+    {
+        // Check for event to request related properties
+        addEventToRequestPrefix( reg );
+    }
 
     // Send a register event to the other brokers if it is a local service
     sendServiceRegistrationEvent( reg );
+
+    if( BrokerSettings::isMultiTenantModeEnabled() && !reg->isOps() )
+    {
+        TenantMetricsService::getInstance().updateTenantServiceCount( reg->getClientTenantGuid().c_str(), 1 );
+    }
 }
 
 /** {@inheritDoc} */
@@ -147,6 +157,11 @@ void ServiceRegistry::unregisterService( const std::string& serviceGuid, bool fi
     if( reg.get() )
     {
         doUnregisterService( reg, fireEvent );
+    }
+
+    if( BrokerSettings::isMultiTenantModeEnabled() && !reg->isOps() )
+    {
+        TenantMetricsService::getInstance().updateTenantServiceCount( reg->getClientTenantGuid().c_str(), -1 );
     }
 }
 
@@ -204,16 +219,19 @@ void ServiceRegistry::doUnregisterService( serviceRegistrationPtr_t reg, bool fi
         // Decrement # of Local Services Register
         decLocalSvc( reg );
 
-        // Reset event to to request map if applicable
-        unordered_map<std::string, std::string> md = reg->getMetaData();
-        auto hasEventMapping = md.find( EVENT_TO_REQUEST_PREFIX_PROP );
-        if( hasEventMapping != md.end() )
-        {    
-            rebuildEventToRequestPrefixMap();
+        if( !BrokerSettings::isMultiTenantModeEnabled() || reg->isOps() )
+        {
+            // Reset event to to request map if applicable
+            unordered_map<std::string, std::string> md = reg->getMetaData();
+            auto hasEventMapping = md.find( EVENT_TO_REQUEST_PREFIX_PROP );
+            if( hasEventMapping != md.end() )
+            {
+                rebuildEventToRequestPrefixMap();
 
-            if( SL_LOG.isDebugEnabled() )
-                SL_START << "Removed event to request: " << hasEventMapping->second 
-                    << ", mapSize: " << m_eventToRequestPrefix.size() << SL_DEBUG_END;
+                if( SL_LOG.isDebugEnabled() )
+                    SL_START << "Removed event to request: " << hasEventMapping->second
+                        << ", mapSize: " << m_eventToRequestPrefix.size() << SL_DEBUG_END;
+            }
         }
 
         // Send an unregister event to the other brokers if it is a local service
@@ -384,6 +402,13 @@ void ServiceRegistry::sendServiceRegistrationEvent( serviceRegistrationPtr_t reg
         DxlMessageService& messageService = DxlMessageService::getInstance();
         shared_ptr<DxlEvent> registerEvent = messageService.createEvent();
         registerEvent->setPayload( ServiceRegistryRegisterEventPayload( *reg ) );
+        // In multi-tenant environments if the service is non-ops only send the service registration
+        // event to the tenant owning the service and ops
+        if( BrokerSettings::isMultiTenantModeEnabled() && !reg->isOps() )
+        {
+            const char* tenantGuids[] = { reg->getClientTenantGuid().c_str() };
+            registerEvent->setDestinationTenantGuids( tenantGuids, 1 );
+        }
         messageService.sendMessage( 
             DxlMessageConstants::CHANNEL_DXL_SVCREGISTRY_REGISTER_EVENT, *registerEvent );
     }
@@ -397,6 +422,13 @@ void ServiceRegistry::sendServiceUnregistrationEvent( serviceRegistrationPtr_t r
         DxlMessageService& messageService = DxlMessageService::getInstance();
         shared_ptr<DxlEvent> unregisterEvent = messageService.createEvent();
         unregisterEvent->setPayload( ServiceRegistryUnregisterEventPayload( reg->getServiceGuid() ) );
+        // In multi-tenant environments if the service is non-ops only send the service unregistration
+        // event to the tenant owning the service and ops
+        if( BrokerSettings::isMultiTenantModeEnabled() && !reg->isOps() )
+        {
+            const char* tenantGuids[] = { reg->getClientTenantGuid().c_str() };
+            unregisterEvent->setDestinationTenantGuids( tenantGuids, 1 );
+        }
         messageService.sendMessage( 
             DxlMessageConstants::CHANNEL_DXL_SVCREGISTRY_UNREGISTER_EVENT, *unregisterEvent );
     }
@@ -540,7 +572,10 @@ void ServiceRegistry::rebuildEventToRequestPrefixMap()
     for( auto serviceIter = m_servicesById.begin(); 
             serviceIter != m_servicesById.end(); serviceIter++ )
     {
-        addEventToRequestPrefix( serviceIter->second );
+        if( !BrokerSettings::isMultiTenantModeEnabled() || serviceIter->second->isOps() )
+        {
+            addEventToRequestPrefix( serviceIter->second );
+        }
     }
 }
 

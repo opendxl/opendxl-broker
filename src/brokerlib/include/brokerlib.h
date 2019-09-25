@@ -35,6 +35,7 @@ namespace broker {
  * @param   maxPacketBufferSize The maximum packet buffer size (out)
  * @param   listenPort The listener port (out)
  * @param   coreLogType The core log types (out)
+ * @param   coreLogCategoryMask The core log category mask (out)
  * @param   messageSizeLimit The core message size limit (out)
  * @param   user The user to run the broker as (out)
  * @param   brokerCertsUtHash List of broker certificate hashes (SHA-1) (out)
@@ -46,9 +47,10 @@ bool brokerlib_main(
     int argc, char *argv[], 
     bool* tlsEnabled, bool* tlsBridgingInsecure, bool* fipsEnabled,
     const char** clientCertChainFile, const char** brokerCertChainFile,
-    const char** brokerKeyFile, const char** brokerCertFile, const char** ciphers,
+    const char** brokerKeyFile, 
+    const char** brokerCertFile, const char** ciphers,
     uint64_t* maxPacketBufferSize, int* listenPort, int* coreLogType,
-    int* messageSizeLimit, char** user,
+    unsigned int* coreLogCategoryMask, int* messageSizeLimit, char** user,
     struct cert_hashes** brokerCertsUtHash,
     bool *webSocketsEnabled, int* webSocketsListenPort );
 

@@ -40,6 +40,7 @@ POSSIBILITY OF SUCH DAMAGE.
 // DXL
 #include "search_optimization.h"
 #include "dxl.h"
+#include "DxlFlags.h"
 
 struct _sub_token {
     struct _sub_token *next;
@@ -294,7 +295,16 @@ static int _sub_add_full_topic(struct mosquitto_db *db, struct mosquitto *contex
     struct _mosquitto_subleaf *leaf, *last_leaf;    
     bool first_leaf = true;        
 
-    _add_topic_to_path(subhier, fulltopic, fulltopiclen, depth); // DXL
+    // DXL Begin
+    _add_topic_to_path(subhier, fulltopic, fulltopiclen, depth);
+
+    if( dxl_is_multi_tenant_mode_enabled() &&
+        !( context->dxl_flags & DXL_FLAG_OPS ) &&
+        !dxl_is_tenant_subscription_allowed( context ) )
+    {
+        return 1;
+    }
+    // DXL End
 
     if(!tokens){
         if(context){
@@ -337,6 +347,8 @@ static int _sub_add_full_topic(struct mosquitto_db *db, struct mosquitto *contex
             db->subscription_count++;
 
             // DXL Begin
+            context->subscription_count++;
+
             if(first_leaf && !context->is_bridge){
                 dxl_on_topic_added_to_broker(fulltopic);
             }
@@ -420,6 +432,8 @@ static int _sub_remove_full_topic(struct mosquitto_db *db, struct mosquitto *con
                     leaf->next->prev = leaf->prev;
                 }
                 // DXL Begin
+                context->subscription_count--;
+
                 if(_is_topic_removed(context, subhier)){
                     dxl_on_topic_removed_from_broker(fulltopic);
                 }

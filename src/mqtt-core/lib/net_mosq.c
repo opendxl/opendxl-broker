@@ -578,13 +578,25 @@ ssize_t _mosquitto_net_read(struct mosquitto *mosq, void *buf, size_t count)
                 while(e){
                     // DXL: Handshake failures only appear in debug due to the fact that we use a socket connect
                     // to emulate ping-like functionality from the clients.
-                    _mosquitto_log_printf(mosq, 
-                        (((e == 336150757L && mosq->state == 0) || /*handshake failure*/
+                    if(((e == 336150757L && mosq->state == 0) || /*handshake failure*/
                           (e == 336105606L && 
                                 (dxl_update_sent_byte_count(mosq, 0) ||
-                                 !dxl_is_tenant_connection_allowed(mosq))) /*certificate verify failed*/)
-                            ? MOSQ_LOG_DEBUG : MOSQ_LOG_ERR), 
-                        "OpenSSL Error: %s", ERR_error_string(e, ebuf));
+                                 !dxl_is_tenant_connection_allowed(mosq))) /*certificate verify failed*/)) {
+                        if(IS_DEBUG_ENABLED) {
+                            char peer_addr[256] = {0};
+                            int peer_port = 0;
+                            _mosquitto_socket_get_address(mosq->sock, peer_addr, 256, &peer_port);
+                            _mosquitto_log_printf(mosq, MOSQ_LOG_DEBUG, 
+                                "OpenSSL Error: %s. Peer: %s:%d", ERR_error_string(e, ebuf), peer_addr, peer_port);
+                        }
+                    }
+                    else {
+                        char peer_addr[256] = {0};
+                        int peer_port = 0;
+                        _mosquitto_socket_get_address(mosq->sock, peer_addr, 256, &peer_port);
+                        _mosquitto_log_printf(mosq, MOSQ_LOG_ERR, 
+                            "OpenSSL Error: %s. Peer: %s:%d", ERR_error_string(e, ebuf), peer_addr, peer_port);
+                    }
                     e = ERR_get_error();
                 }
                 errno = EPROTO;
@@ -620,7 +632,11 @@ ssize_t _mosquitto_net_write(struct mosquitto *mosq, void *buf, size_t count)
             }else{
                 e = ERR_get_error();
                 while(e){
-                    _mosquitto_log_printf(mosq, MOSQ_LOG_ERR, "OpenSSL Error: %s", ERR_error_string(e, ebuf));
+                    char peer_addr[256] = {0};
+                    int peer_port = 0;
+                    _mosquitto_socket_get_address(mosq->sock, peer_addr, 256, &peer_port);
+                    _mosquitto_log_printf(mosq, MOSQ_LOG_ERR, 
+                        "OpenSSL Error: %s. Peer: %s:%d", ERR_error_string(e, ebuf), peer_addr, peer_port);
                     e = ERR_get_error();
                 }
                 errno = EPROTO;

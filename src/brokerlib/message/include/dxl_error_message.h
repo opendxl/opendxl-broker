@@ -19,7 +19,9 @@ extern "C"
     typedef enum { 
         FABRICSERVICEUNAVAILABLE    = 0x80000001, // Fabric - service unavailable
         FABRICSERVICEOVERLOADED     = 0x80000002, // Fabric - service is overloaded
-        FABRICTIMEOUTRESPONSE       = 0x80000003  // Internal timeout waiting for response
+        FABRICTIMEOUTRESPONSE       = 0x80000003, // Internal timeout waiting for response
+        FABRICSERVICELIMITEXCEEDED  = 0x80000011, // Tenant service limit exceeded
+        FABRICSUBLIMITEXCEEDED      = 0x80000012  // Tenant subscription limit exceeded
     } error_code_t;
 
     // Get the error messages.  They point to const char *, so

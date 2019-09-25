@@ -193,6 +193,15 @@ public:
     bool isTestModeEnabled() const;
 
     /**
+     * Returns whether a new tenant client subscription is allowed
+     *
+     * @param   tenantGuid The guid of the tenant trying to subscribe
+     * @param   subscriptionCount The current number of subscriptions the client has
+     * @return  whether a new tenant client subscription is allowed
+     */
+    bool isTenantSubscriptionAllowed( const char* tenantGuid, int subscriptionCount ) const;
+
+    /**
      * Sends a message to the fabric (The message will be sent during the next core maintenance interval).
      *
      * @param   topic The topic for the message

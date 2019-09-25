@@ -17,6 +17,8 @@ namespace metrics {
 typedef unordered_map<std::string,uint32_t> sentBytesByTenant_t;
 /** The count of connections per tenant */
 typedef unordered_map<std::string,int> connectionsByTenant_t;
+/** The count of services per tenant */
+typedef unordered_map<std::string,int> servicesByTenant_t;
 
 /**
  * Service that tracks metrics per tenant. These metrics are used to limit the use of
@@ -66,17 +68,74 @@ public:
     bool isConnectionAllowed( const char* tenantId ) const;
 
     /**
+     * Updates the count of services
+     *
+     * @param   tenantId The tenant identifier
+     * @param   adjCount The value to add (or subtract) from the current count
+     */
+    void updateTenantServiceCount( const char* tenantId, int adjCount );
+
+    /**
+     * Whether a service registration is allowed for the specified tenant
+     *
+     * @param   tenantId The tenant identifier
+     * @return  Whether a service registration is allowed for the specified tenant
+     */
+    bool isServiceRegistrationAllowed( const char* tenantId ) const;
+
+    /**
+     * Returns whether a new tenant client subscription is allowed
+     *
+     * @param   tenantGuid The guid of the tenant trying to subscribe
+     * @param   subscriptionCount The current number of subscriptions the client has
+     * @return  whether a new tenant client subscription is allowed
+     */
+    bool isTenantSubscriptionAllowed( const char* tenantGuid, int subscriptionCount ) const;
+
+    /**
      * Returns the single service instance
      * 
      * @return  The single service instance
      */
     static TenantMetricsService& getInstance();
-    
+
 private:
+
+    /**
+     * Updates the entry for the provided tenant in the provided counts by the provided amount.
+     *
+     * @param   tenantId The tenant identifier
+     * @param   adjCount The amount to adjust the tenant count by
+     * @param   limit The limit for the tenant count
+     * @param   counts The map of tenant ID to count
+     * @return  false if the limit has been exceeded, otherwise true
+     */
+    bool updateTenantLimitCount( const char* tenantId, int adjCount, int limit, unordered_map<std::string,int>& counts );
+
+    /**
+     * Determines whether a specified tenant is still within the given limit
+     *
+     * @param   tenantId The tenant identifier
+     * @param   limit The tenant limit
+     * @param   counts The current counts for each tenant
+     * @return  Whether the specified tenant is within the specified limit
+     */
+    bool checkTenantWithinLimit( const char* tenantId, int limit, const unordered_map<std::string,int>& counts ) const;
+
+    /**
+     * Sends a DXL event notifying that a tenant limit has been exceeded
+     *
+     * @param   tenantId The tenant identifier
+     * @param   limitType The type of limit the tenant has exceeded
+     */
+    void sendLimitExceededEvent( const char* tenantId, const char* limitType ) const;
+
     /** The count of sent bytes per tenant */
     sentBytesByTenant_t m_sentBytesPerTenant;
     /** The count of connections per tenant */
     connectionsByTenant_t m_connectionsPerTenant;
+    /** The count of services per tenant */
+    servicesByTenant_t m_servicesPerTenant;
 };
 
 } /* namespace metrics */

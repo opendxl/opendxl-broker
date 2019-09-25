@@ -478,6 +478,12 @@ bool CoreInterface::isTestModeEnabled() const
 }
 
 /** {@inheritDoc} */
+bool CoreInterface::isTenantSubscriptionAllowed( const char* tenantGuid, int subscription_count ) const
+{
+    return TenantMetricsService::getInstance().isTenantSubscriptionAllowed( tenantGuid, subscription_count );
+}
+
+/** {@inheritDoc} */
 const char* CoreInterface::getBrokerTenantGuid() const
 {
     // In case tenant GUID empty, do not throw any exception.

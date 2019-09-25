@@ -256,11 +256,6 @@ int mqtt3_handle_connect(struct mosquitto_db *db, struct mosquitto *context)
         }else{ /* mqtt311 */
             _mosquitto_free(client_id);
 
-            if(clean_session == 0){
-                _mosquitto_send_connack(context, CONNACK_REFUSED_IDENTIFIER_REJECTED);
-                mqtt3_context_disconnect(db, context);
-                return MOSQ_ERR_PROTOCOL;
-            }
             _mosquitto_send_connack(context, CONNACK_REFUSED_IDENTIFIER_REJECTED);
             mqtt3_context_disconnect(db, context);
             return MOSQ_ERR_PROTOCOL;
@@ -481,9 +476,12 @@ int mqtt3_handle_connect(struct mosquitto_db *db, struct mosquitto *context)
 
     if(will_struct){
         context->will = will_struct;
+        will_struct = NULL;
         context->will->topic = will_topic;
+        will_topic = NULL;
         if(will_payload){
             context->will->payload = will_payload;
+            will_payload = NULL;
             context->will->payloadlen = will_payloadlen;
         }else{
             context->will->payload = NULL;

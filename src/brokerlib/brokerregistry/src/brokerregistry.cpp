@@ -200,7 +200,8 @@ BrokerRegistry& BrokerRegistry::getInstance()
 }
 
 /** {@inheritDoc} */
-BrokerRegistry::BrokerRegistry() : m_ttlCheckTime( 0 )
+BrokerRegistry::BrokerRegistry() : m_ttlCheckTime( 0 ), m_localBrokerPort( 0 ),
+    m_localBrokerWebSocketPort( 0 ), m_localBrokerConnectionLimit( 0 )
 {
     m_topicCacheService.m_brokerRegistry = this;
 }
