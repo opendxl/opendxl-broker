@@ -38,7 +38,6 @@ RUN cd /tmp \
     && make \
     && make install
 
-
 # Build broker
 COPY src /tmp/src
 RUN cd /tmp/src && make
