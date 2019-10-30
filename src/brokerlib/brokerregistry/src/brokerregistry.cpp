@@ -284,10 +284,13 @@ bool BrokerRegistry::removeBroker( const std::string &brokerId )
     if( exists( brokerId ) )
     {
         // Remove all connections to the broker
+        const char* localBrokerGuid = BrokerSettings::getGuid();
         for( auto i = m_registry.begin(); i != m_registry.end(); ++i )
         {
-            (*i).second.removeConnection( brokerId );
-            //cache_.invalidate((*i).first, brokerId);
+            if ( (*i).first.compare( localBrokerGuid ) != 0 )
+            {
+                (*i).second.removeConnection( brokerId );
+            }
         }
 
         retVal = ( m_registry.erase( brokerId ) == 1 );
@@ -440,21 +443,18 @@ bool BrokerRegistry::setConnections(
     const registry::connection_t &connectionIds,
     const registry::childConnections_t &childConnectionIds )
 {
-    if( !connectionIds.empty() )
-    {
-        // Find the broker whose connections we're going to modify
-        auto regItr = m_registry.find( brokerId );
-        if( regItr != m_registry.end() )
-        {    
-            // Replace the list of current connections
-            if( (*regItr).second.setConnections( connectionIds, childConnectionIds ) )
-            {            
-                // Invalidate routing and topic caches
-                clearAllCaches();
-            }
-
-            return true;
+    // Find the broker whose connections we're going to modify
+    auto regItr = m_registry.find( brokerId );
+    if( regItr != m_registry.end() )
+    {    
+        // Replace the list of current connections
+        if( (*regItr).second.setConnections( connectionIds, childConnectionIds ) )
+        {            
+            // Invalidate routing and topic caches
+            clearAllCaches();
         }
+
+        return true;
     }
 
     return false;
