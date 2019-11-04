@@ -249,6 +249,8 @@ int mosquitto_main_loop(struct mosquitto_db *db);
 int mosquitto_get_listensock_count();
 int* mosquitto_get_listensocks();
 void mosquitto_set_listensocks(int* socks, int sock_count);
+void mosquitto_add_pending_bytes_set(struct mosquitto* context);
+void mosquitto_remove_pending_bytes_set(struct mosquitto* context);
 void mosquitto_add_new_clients_set(struct mosquitto* context);
 void mosquitto_add_new_msgs_set(struct mosquitto* context);
 void mosquitto_update_context(uint32_t ctx_idx, struct mosquitto *context);

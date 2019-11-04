@@ -94,6 +94,7 @@ struct mosquitto *mqtt3_context_init(int sock)
     context->tls_certtype = unknown;
     context->numericId = 0;
     context->clean_subs = false;
+	context->pending_bytes = false;
     context->dxl_client_guid = NULL;
     context->dxl_tenant_guid = NULL;
     context->cert_hashes = NULL;
@@ -227,6 +228,7 @@ void mqtt3_context_cleanup(struct mosquitto_db *db, struct mosquitto *context, b
         context->msg_count = 0;
         context->msg_count12 = 0;
         context->subscription_count = 0;
+		context->pending_bytes = false;
         // DXL end
 #ifdef PACKET_COUNT
         context->packet_count = 0;

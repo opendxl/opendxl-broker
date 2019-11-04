@@ -118,6 +118,7 @@ struct mosquitto {
     // DXL Begin
     uint32_t numericId;
     bool clean_subs;
+	bool pending_bytes;
     // DXL End
     int sock;
     int ws_sock;

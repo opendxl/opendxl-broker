@@ -932,6 +932,16 @@ int _mosquitto_packet_read(struct mosquitto_db *db, struct mosquitto *mosq,
     }
     while(ws_buf && (ws_pos < ws_len)); // For websockets, the supplied buffer can have more than one packet. 
                                         // So, loop again for any remaining data in the buffer. 
+
+    if(mosq->ssl){
+        int pending = SSL_pending(mosq->ssl);
+		if(pending > 0){
+			mosquitto_add_pending_bytes_set(mosq);
+		} else {
+			mosquitto_remove_pending_bytes_set(mosq);
+		}
+	}
+
     return rc;
 }
 
