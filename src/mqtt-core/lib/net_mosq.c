@@ -935,12 +935,12 @@ int _mosquitto_packet_read(struct mosquitto_db *db, struct mosquitto *mosq,
 
     if(mosq->ssl){
         int pending = SSL_pending(mosq->ssl);
-		if(pending > 0){
-			mosquitto_add_pending_bytes_set(mosq);
-		} else {
-			mosquitto_remove_pending_bytes_set(mosq);
-		}
-	}
+        if(pending > 0){
+            mosquitto_add_pending_bytes_set(mosq);
+        } else {
+            mosquitto_remove_pending_bytes_set(mosq);
+        }
+    }
 
     return rc;
 }

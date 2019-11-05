@@ -438,7 +438,7 @@ int mqtt3_handle_connect(struct mosquitto_db *db, struct mosquitto *context)
             mosquitto_epoll_update_context_index(db->contexts[i], i); // EPOLL
             context->numericId = i; // DXL
             context->clean_subs = false; // DXL
-			context->pending_bytes = false; // DXL
+            mosquitto_remove_pending_bytes_set(context); // DXL
         }
     }
 
