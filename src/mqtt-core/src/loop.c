@@ -140,31 +140,31 @@ static void remove_new_clients_set(struct mosquitto* context)
 static struct context_hash *pending_bytes_hash = NULL;
 void mosquitto_add_pending_bytes_set(struct mosquitto* context)
 {
-	if(!context->pending_bytes){
-		struct context_hash *s = NULL;
+    if(!context->pending_bytes){
+        struct context_hash *s = NULL;
 
-		HASH_FIND_PTR(pending_bytes_hash, (&context), s);
-		if(!s){
-			s = (struct context_hash *)malloc(sizeof(struct context_hash));
-			s->context = context;
-			HASH_ADD_PTR(pending_bytes_hash, context, s);
-		}
-		context->pending_bytes = true;
-	}
+        HASH_FIND_PTR(pending_bytes_hash, (&context), s);
+        if(!s){
+            s = (struct context_hash *)malloc(sizeof(struct context_hash));
+            s->context = context;
+            HASH_ADD_PTR(pending_bytes_hash, context, s);
+        }
+        context->pending_bytes = true;
+    }
 }
 
 void mosquitto_remove_pending_bytes_set(struct mosquitto* context)
 {
-	if(context->pending_bytes){
-		struct context_hash *s = NULL;
+    if(context->pending_bytes){
+        struct context_hash *s = NULL;
 
-		HASH_FIND_PTR(pending_bytes_hash, (&context), s);
-		if(s){
-			HASH_DEL(pending_bytes_hash, s);
-			free(s);		
-		}
-		context->pending_bytes = false;
-	}
+        HASH_FIND_PTR(pending_bytes_hash, (&context), s);
+        if(s){
+            HASH_DEL(pending_bytes_hash, s);
+            free(s);		
+        }
+        context->pending_bytes = false;
+    }
 }
 
 /*
@@ -588,8 +588,8 @@ int mosquitto_main_loop(struct mosquitto_db *db)
             do_maintenance = now + 10;
         }
 
-		int waitTime = HASH_COUNT(pending_bytes_hash) > 0 ? 0 : 100;
-		
+        int waitTime = HASH_COUNT(pending_bytes_hash) > 0 ? 0 : 100;
+
         /* See if there are any events */
         fdcount = epoll_pwait(efd, epoll_events, MAXEVENTS, waitTime, &sigblock);
         if(fdcount == -1){
@@ -650,11 +650,11 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct epoll_event
 {
     int i;
 
-	struct context_hash *s, *tmp;
-	HASH_ITER(hh, pending_bytes_hash, s, tmp){
-		struct mosquitto* ctx = s->context;
-		handle_read(db, ctx, NULL);
-	}
+    struct context_hash *s, *tmp;
+    HASH_ITER(hh, pending_bytes_hash, s, tmp){
+        struct mosquitto* ctx = s->context;
+        handle_read(db, ctx, NULL);
+    }
 
     for(i=0; i<eventcount; i++){
         struct epoll_event *event = &events[i];
