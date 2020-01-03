@@ -47,6 +47,20 @@ public:
      */
     const char* getDestinationServiceId() const;
 
+    /**
+     * Sets whether to perform a multi-service request
+     *
+     * @param   multiRequest Whether to perform a multi-service request
+     */
+    void setMultiServiceRequest( bool isMultiServiceRequest );
+
+    /**
+     * Returns whether to perform a multi-service request
+     *
+     * @return  Whether to perform a multi-service request
+     */
+    bool getMultiServiceRequest() const;
+
 protected:
     /** 
      * Constructor 

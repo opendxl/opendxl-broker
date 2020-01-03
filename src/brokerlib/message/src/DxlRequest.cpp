@@ -33,6 +33,21 @@ const char* DxlRequest::getDestinationServiceId() const
 }
 
 /** {@inheritDoc} */
+void DxlRequest::setMultiServiceRequest( bool isMultiServiceRequest )
+{
+    setDxlRequestMultiService( NULL, getMessage(), isMultiServiceRequest );
+
+    // Mark dirty
+    markDirty();
+}
+
+/** {@inheritDoc} */
+bool DxlRequest::getMultiServiceRequest() const
+{
+    return getMessage()->dxl_message_specificData.requestData->isMultiServiceRequest;
+}
+
+/** {@inheritDoc} */
 DxlRequest::~DxlRequest()
 {
 }

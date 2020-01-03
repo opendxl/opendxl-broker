@@ -108,6 +108,10 @@ dxl_message_error_t setDxlMessageClientGuids(struct dxl_message_context_t *conte
 dxl_message_error_t setDxlRequestMessageAttributes(struct dxl_message_context_t *context,
     dxl_message_t* message, enum dxl_request_attribute_t type, const char* replyToTopic);
 
+/* Request multi-service - data is copied */
+dxl_message_error_t setDxlRequestMultiService(struct dxl_message_context_t *context,
+    dxl_message_t* message, bool isMultiService);
+
 /* Response (and response error) attributes - data is copied */
 dxl_message_error_t setDxlResponseMessageAttributes(struct dxl_message_context_t *context,
     dxl_message_t* message, const char* requestMessageId);

@@ -46,6 +46,7 @@ typedef struct dxl_message_request_t
 {
     const char* replyToTopic;
     const char *serviceInstanceId;
+    bool isMultiServiceRequest;
 } dxl_message_request_t; 
 
 /*

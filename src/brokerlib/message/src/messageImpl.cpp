@@ -11,7 +11,7 @@
 
 
 /* All the messages are going to be promoted to this DXL message version. */
-#define DXL_MSG_VERSION 3
+#define DXL_MSG_VERSION 4
 
 struct dxl_message_context_t
 {
@@ -95,6 +95,9 @@ dxl_message_error_t initBaseMessage( struct dxl_message_context_t* /*context*/,
     //   5.0+:
     //     Added "sourceClientInstanceId" to support multiple 
     //     connections per client (string).
+    // Version 4:
+    //   TBD:
+    //     Multi-service request message
     ////////////////////////////////////////////////////////////////////////////
     base->version = DXL_MSG_VERSION;
 
@@ -127,6 +130,7 @@ dxl_message_error_t createDxlMessage(struct  dxl_message_context_t *context,
             (dxl_message_request_t*)calloc(1, sizeof(dxl_message_request_t));
         pMsg->dxl_message_specificData.requestData->replyToTopic = strdup("");
         pMsg->dxl_message_specificData.requestData->serviceInstanceId = strdup("");
+        pMsg->dxl_message_specificData.requestData->isMultiServiceRequest = false;
     }
     else if ( messageType == DXLMP_RESPONSE )
     {
@@ -286,7 +290,6 @@ dxl_message_error_t copyDxlMessage(struct  dxl_message_context_t *context,
             dest->dxl_message_specificData.responseErrorData->errorMessage =
               strdup(source->dxl_message_specificData.responseErrorData->errorMessage);
         }
-
     }
     else
     {
@@ -339,6 +342,20 @@ dxl_message_error_t copyDxlMessage(struct  dxl_message_context_t *context,
         }
     }
 
+    ////////////////////////////////////////////////////////////////////////////
+    // Version 4
+    ////////////////////////////////////////////////////////////////////////////
+
+    if( ret == DXLMP_OK && source->version > 3 )
+    {
+        if ( dest->messageType == DXLMP_REQUEST )
+        {
+            /* Multi-service request message */
+            dest->dxl_message_specificData.requestData->isMultiServiceRequest =
+                source->dxl_message_specificData.requestData->isMultiServiceRequest;
+        }
+    }
+    
     ////////////////////////////////////////////////////////////////////////////
     // Common final steps
     ////////////////////////////////////////////////////////////////////////////
@@ -775,6 +792,26 @@ dxl_message_error_t createDxlMessageFromBytes(struct  dxl_message_context_t *con
     }
 
     ////////////////////////////////////////////////////////////////////////////
+    // Version 4
+    ////////////////////////////////////////////////////////////////////////////
+
+    if ( version > 3 )
+    {
+        if ( type == DXLMP_REQUEST)
+        {
+            if ( DXLMP_OK != unpackInt(&pac, 
+                    (int*)&(dest->dxl_message_specificData.requestData->isMultiServiceRequest)) )
+            {
+                if (context && context->logger_)
+                    context->logger_(context->cb_arg_,
+                        "Failed to get multi-service request flag");
+                msgpack_unpacker_destroy(&pac);
+                return DXLMP_BAD_DATA;
+            }
+        }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
     // Common final steps
     ////////////////////////////////////////////////////////////////////////////
 
@@ -953,6 +990,20 @@ dxl_message_error_t dxlMessageToBytes( struct  dxl_message_context_t *context,
         temp = strlen(message->sourceClientInstanceId);
         msgpack_pack_v4raw(pk,temp);
         msgpack_pack_v4raw_body(pk,temp ? message->sourceClientInstanceId : NULL, temp);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    // Version 4
+    ////////////////////////////////////////////////////////////////////////////
+
+    if ( message->version > 3 )
+    {
+        if ( message->messageType == DXLMP_REQUEST )
+        {
+            /* Multi-service request message */
+            msgpack_pack_int8(pk, (unsigned char)
+                message->dxl_message_specificData.requestData->isMultiServiceRequest);
+        }
     }
 
     ////////////////////////////////////////////////////////////////////////////
@@ -1343,6 +1394,20 @@ dxl_message_error_t setDxlRequestMessageAttributes(struct  dxl_message_context_t
     }
     return DXLMP_OK;
 }
+
+/******************************************************************************/
+dxl_message_error_t setDxlRequestMultiService(struct dxl_message_context_t* /*context*/,
+    dxl_message_t* message, bool isMultiService)
+/******************************************************************************/
+{
+    if ( message->messageType != DXLMP_REQUEST )
+        return DXLMP_WRONG_MESSAGE_TYPE;
+
+    message->dxl_message_specificData.requestData->isMultiServiceRequest = isMultiService;
+
+    return DXLMP_OK;
+}
+
 
 /******************************************************************************/
 dxl_message_error_t setDxlResponseMessageAttributes(struct  dxl_message_context_t* /*context*/,
