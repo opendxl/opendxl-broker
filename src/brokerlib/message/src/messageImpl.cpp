@@ -54,6 +54,41 @@ dxl_message_error_t releaseDxlMessageContext(struct dxl_message_context_t *conte
     return DXLMP_OK;
 }
 
+dxl_message_error_t dxlMessageAssignNewMessageId(struct dxl_message_context_t */*context*/,
+    dxl_message_t* message, const char* prefix)
+{
+    const char* oldMessageId = message->messageId;
+    const char* id = NULL;
+    dxl_message_error_t res = generateMessageId(&id);
+    if (res == DXLMP_OK)
+    {
+        if (!prefix) 
+        {
+            message->messageId = id;
+        }
+        else
+        {
+            int prefixLen = strlen(prefix);
+            int idLen = strlen(id);
+            int len = prefixLen + idLen + 2;
+            char* newId = (char*)malloc(len * sizeof(char));
+            strncpy(newId, prefix, prefixLen);
+            newId[prefixLen] = ':';
+            strncpy(newId + prefixLen + 1, id, idLen);            
+            newId[len-1] = '\0';
+            free( (void*)id );
+            message->messageId = newId;
+        }        
+
+        if( oldMessageId )
+        {
+            free( (void*)oldMessageId );
+        }
+    }    
+
+    return res;
+}
+
 /******************************************************************************/
 dxl_message_error_t initBaseMessage( struct dxl_message_context_t* /*context*/,
     dxl_message_t* base,

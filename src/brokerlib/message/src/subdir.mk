@@ -60,6 +60,7 @@ OBJS += \
 	message/payload/src/ClientRegistryQueryResponsePayload.o \
 	message/payload/src/EventSubscriberNotFoundEventPayload.o \
 	message/payload/src/FabricChangeEventPayload.o \
+	message/payload/src/MultiServiceRequestResponsePayload.o \
 	message/payload/src/ServiceRegistryRegisterEventPayload.o \
 	message/payload/src/ServiceRegistryUnregisterEventPayload.o \
 	message/payload/src/ServiceRegistryQueryRequestPayload.o \

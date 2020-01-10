@@ -107,6 +107,7 @@ const char* DxlMessageConstants::PROP_WEBSOCKET_PORT = "webSocketPort";
 const char* DxlMessageConstants::PROP_PROPERTIES = "properties";
 const char* DxlMessageConstants::PROP_REGISTRATION_TIME = "registrationTime";
 const char* DxlMessageConstants::PROP_REQUEST_CHANNELS = "requestChannels";
+const char* DxlMessageConstants::PROP_REQUESTS = "requests";
 const char* DxlMessageConstants::PROP_SERVICES = "services";
 const char* DxlMessageConstants::PROP_SERVICE_GUID = "serviceGuid";
 const char* DxlMessageConstants::PROP_SERVICE_TYPE = "serviceType";

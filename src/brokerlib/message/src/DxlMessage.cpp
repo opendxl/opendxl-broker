@@ -32,6 +32,72 @@ DxlMessage::DxlMessage( dxl_message_t* msg ) :
 }
 
 /** {@inheritDoc} */
+DxlMessage::DxlMessage( const DxlMessage& msg )
+{
+    operator=( msg );
+}
+
+/** {@inheritDoc} */
+DxlMessage& DxlMessage::operator=(const DxlMessage& other )
+{    
+    if( this != &other )
+    {
+        // Underlying message
+        m_msg = NULL;
+        dxl_message_error_t result = copyDxlMessage( NULL, other.m_msg, &m_msg );
+        if( result != DXLMP_OK ) 
+        {
+            std::ostringstream exstream;
+            exstream << "Error attempting to copy DXL message: " << result;
+            throw runtime_error( exstream.str() );
+        }
+
+        // Is dirty
+        m_isDirty = other.m_isDirty;
+
+        // Broker GUIDs
+        m_destBrokerGuids = NULL;
+        if (other.m_destBrokerGuids) {
+            m_destBrokerGuids = new unordered_set<string>();
+            *m_destBrokerGuids = *other.m_destBrokerGuids; 
+        }
+
+        // Client GUIDs
+        m_destClientGuids = NULL;
+        if (other.m_destClientGuids) {
+            m_destClientGuids = new unordered_set<string>();
+            *m_destClientGuids = *other.m_destClientGuids; 
+        }
+
+        // Next Broker GUIDs
+        m_nextBrokerGuids = NULL;
+        if (other.m_nextBrokerGuids) {
+            m_nextBrokerGuids = new unordered_set<string>();
+            *m_nextBrokerGuids = *other.m_nextBrokerGuids; 
+        }
+
+        // Other fields
+        m_otherFields = NULL;
+        if (other.m_otherFields) {
+            m_otherFields = new unordered_map<std::string, std::string>();
+            *m_otherFields = *other.m_otherFields; 
+        }
+
+        // Other fields pending
+        m_otherFieldsPending = other.m_otherFieldsPending;
+
+        // Destination Tenant GUIDs
+        m_destTenantGuids = NULL;
+        if (other.m_destTenantGuids) {
+            m_destTenantGuids = new unordered_set<string>();
+            *m_destTenantGuids = *other.m_destTenantGuids; 
+        }
+    }
+
+    return *this;
+}
+
+/** {@inheritDoc} */
 DxlMessage::~DxlMessage()
 {
     freeMessage( m_msg );    
@@ -67,6 +133,12 @@ dxl_message_t* DxlMessage::getMessage() const
 const char* DxlMessage::getMessageId() const
 {
     return m_msg->messageId;
+}
+
+/** {@inheritDoc} */
+void DxlMessage::assignNewMessageId(const char* prefix) 
+{
+    dxlMessageAssignNewMessageId( NULL, m_msg, prefix );
 }
 
 /** {@inheritDoc} */

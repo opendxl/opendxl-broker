@@ -204,7 +204,6 @@ void DxlMessageHandlers::registerHandlers()
     // Global
     handlerService.registerFinalizeHandler( &s_noRequestDestHandler );
 
-
     // Register test mode handlers
     if( BrokerSettings::isTestModeEnabled() )
     {

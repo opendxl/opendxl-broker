@@ -59,6 +59,18 @@ private:
         dxl::broker::message::DxlErrorResponse* errorResponse ) const;
 
     /**
+     * Handles a multi-service request
+     * 
+     * @param   context The context
+     * @param   dxlRequest The request
+     * @param   clientTenantGuid The client tenant GUID
+     */
+    void handleMultiServiceRequest( 
+        const dxl::broker::core::CoreMessageContext* context, 
+        dxl::broker::message::DxlRequest* dxlRequest, 
+        const char* clientTenantGuid ) const;
+
+    /**
      * Finds the service for the specified topic
      *
      * @param   topic The topic to find the service for

@@ -9,6 +9,7 @@
 #include "message/include/DxlMessageConstants.h"
 #include "message/include/DxlMessageService.h"
 #include "message/handler/include/ServiceLookupHandler.h"
+#include "message/payload/include/MultiServiceRequestResponsePayload.h"
 #include "core/include/CoreUtil.h"
 #include "message/include/dxl_error_message.h"
 #include <cstring>
@@ -17,6 +18,7 @@ using namespace std;
 using namespace dxl::broker;
 using namespace dxl::broker::message;
 using namespace dxl::broker::message::handler;
+using namespace dxl::broker::message::payload;
 using namespace dxl::broker::core;
 using namespace dxl::broker::service;
 
@@ -93,6 +95,88 @@ serviceRegistrationPtr_t ServiceLookupHandler::findServiceForTopic(
 }
 
 /** {@inheritDoc} */
+void ServiceLookupHandler::handleMultiServiceRequest( 
+    const CoreMessageContext* context, DxlRequest* dxlRequest, const char* clientTenantGuid ) const
+{
+    // TODO: Does not currently take into consideration wildcards
+    // TODO: The underlying lookup methods need to be updated to correctly round-robin
+    //       multi-service requests
+    //
+    //       To accomplish this, the following order would be ideal:
+    //
+    //        Types: (ordered service types)
+    //            svctype_a 
+    //            svctype_b
+    //            svctype_c
+    //        Services in registry: (Services arranged to distribute groups of types)
+    //            svc1: svctype_a
+    //            svc2: svctype_b
+    //            svc3: svstype_c
+    //            svc4: svctype_a
+    //            svc5: svctype_b
+    //            svc6: svctype_c
+    //            ...
+
+    // Determine unique types for the request    
+    const topicServiceTypes_t *types = 
+        ServiceRegistry::getInstance().getServiceTypes( context->getTopic() );
+
+    if( types )
+    {        
+        unordered_map<string, serviceRegistrationPtr_t> servicesByRequestId;
+
+        // Iterate the different types attempting to locate valid services for
+        // each one        
+        for( auto iter = types->begin(); iter != types->end(); iter++ )
+        {
+            if( SL_LOG.isDebugEnabled() )
+            {
+                SL_START << "Looking up service for type: " << (*iter) << SL_DEBUG_END;
+            }
+
+            serviceRegistrationPtr_t service; 
+            service = ServiceRegistry::getInstance().getNextService( 
+                context->getTopic(), clientTenantGuid, iter->c_str() );
+
+            if( service.get() )
+            {
+                if( SL_LOG.isDebugEnabled() )
+                {
+                    SL_START << "Found service: "<< service->getServiceGuid() <<
+                        ", type: " << service->getServiceType() << SL_DEBUG_END;
+                }
+
+                // Send the request
+                DxlRequest req(*dxlRequest);
+                req.assignNewMessageId( dxlRequest->getMessageId() );
+                req.setDestinationBrokerGuid( service->getBrokerGuid().c_str() );
+                req.setDestinationClientGuid( service->getClientInstanceGuid().c_str() );
+                req.setDestinationServiceId( service->getServiceGuid().c_str() );
+                req.setMultiServiceRequest( false );
+                DxlMessageService::getInstance().sendMessage( context->getTopic(), req );
+
+                // Add the service to the list of services
+                servicesByRequestId[ req.getMessageId() ] = service;
+            }
+        }                
+
+        if( !servicesByRequestId.empty() )
+        {
+            // Create the response
+            const shared_ptr<DxlResponse> response = DxlMessageService::getInstance().createResponse( dxlRequest );
+            // Set the payload
+            MultiServiceRequestResponsePayload responsePayload( servicesByRequestId );
+            response->setPayload( responsePayload );
+            // Send the response
+            DxlMessageService::getInstance().sendMessage( dxlRequest->getReplyToTopic(), *response );
+            return;
+        }
+    }
+
+    DxlMessageService::getInstance().sendServiceNotFoundErrorMessage( dxlRequest );
+}
+
+/** {@inheritDoc} */
 bool ServiceLookupHandler::handleRequest( const CoreMessageContext* context, DxlRequest* dxlRequest ) const
 {
     const char* serviceId = dxlRequest->getDestinationServiceId();
@@ -109,11 +193,21 @@ bool ServiceLookupHandler::handleRequest( const CoreMessageContext* context, Dxl
     {
         // The tenant GUID to find the service for.
         const char* clientTenantGuid = dxlRequest->getSourceTenantGuid();
-        serviceRegistrationPtr_t service;
-    
+
+        // Handle multi-service requests
+        if( dxlRequest->isMultiServiceRequest() )
+        {
+            // Generate the multi service requests
+            handleMultiServiceRequest( context, dxlRequest, clientTenantGuid );
+
+            // We create new requests, so do not forward
+            return false;                        
+        }
+
+        serviceRegistrationPtr_t service;    
         if( hasServiceId )
         {
-              // A service identifier was specified, but the routing information has not been 
+            // A service identifier was specified, but the routing information has not been 
             // set. Lookup the service taking into account the tenant GUID.
             service = ServiceRegistry::getInstance().findService( serviceId, clientTenantGuid );
             if( !service.get() )

@@ -380,13 +380,14 @@ const std::vector<serviceRegistrationPtr_t> ServiceRegistry::getAllServices( con
 }
 
 /** {@inheritDoc} */
-serviceRegistrationPtr_t ServiceRegistry::getNextService( const string& topic, const char* targetServiceTenantGuid )
+serviceRegistrationPtr_t ServiceRegistry::getNextService( 
+    const string& topic, const char* targetServiceTenantGuid, const char* serviceType )
 {
     auto servicesByTopic = m_servicesByTopic.find( topic );
     if( servicesByTopic != m_servicesByTopic.end() )
     {
         // Next service for topic
-        return servicesByTopic->second->getNextService( targetServiceTenantGuid );
+        return servicesByTopic->second->getNextService( targetServiceTenantGuid, serviceType );
     }
 
     // Empty pointer
@@ -602,6 +603,19 @@ void ServiceRegistry::addEventToRequestPrefix( const serviceRegistrationPtr_t& r
             }
         }
     }
+}
+
+/** {@inheritDoc} */
+topicServiceTypes_t *ServiceRegistry::getServiceTypes(const std::string &topic) 
+{
+    auto servicesByTopic = m_servicesByTopic.find( topic );
+    if( servicesByTopic != m_servicesByTopic.end() )
+    {
+        // Next service for topic
+        return servicesByTopic->second->getServiceTypes();
+    }
+
+    return NULL;
 }
 
 /** {@inheritDoc} */

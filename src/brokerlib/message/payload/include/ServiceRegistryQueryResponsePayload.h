@@ -37,7 +37,7 @@ public:
     void write( Json::Value& out ) const;    
 
 private:
-    /** The broker states */
+    /** The registrations */
     const std::vector<dxl::broker::service::serviceRegistrationPtr_t> m_registrations;
 };
 

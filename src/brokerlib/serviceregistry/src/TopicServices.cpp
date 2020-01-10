@@ -28,6 +28,17 @@ void TopicServices::clearServiceZones()
 }
 
 /** {@inheritDoc} */
+void TopicServices::clearServiceTypes()
+{
+    // Clear the types
+    m_serviceTypes.clear();
+
+    if( SL_LOG.isDebugEnabled() )
+        SL_START << "Cleared the service types for topic: " 
+            << m_topic << SL_DEBUG_END;
+}
+
+/** {@inheritDoc} */
 void TopicServices::calculateServiceZones()
 {
     // Create services by zone
@@ -153,7 +164,7 @@ void TopicServices::calculateServiceZones()
             SL_START << "Zone topic: " << zonePtr->getTopic() << SL_DEBUG_END;
             SL_START << "    Service zone: " << 
                 ( zonePtr->getZone().size() ? zonePtr->getZone() : "(none)" ) << SL_DEBUG_END;
-            const std::set<serviceRegistrationPtr_t> services = zonePtr->getServices();
+            const auto services = zonePtr->getServices();
             for( auto serviceIter = services.begin(); serviceIter != services.end(); serviceIter++ )
             {
                 SL_START << "        Service: " << (*serviceIter)->getServiceGuid()
@@ -165,12 +176,28 @@ void TopicServices::calculateServiceZones()
     }
 }
 
+/** {@inheritDoc} */
+topicServiceTypes_t *TopicServices::getServiceTypes() {
+SL_START << "TopicServices::getServiceTypes(): " << SL_INFO_END;
+    if( m_serviceTypes.empty() )
+    {
+        auto it = m_serviceTypes.begin();
+        for( auto iter = m_services.begin(); iter != m_services.end(); iter++ )
+        {
+SL_START << "    Service: " << (*iter)->getServiceGuid() << ", " << (*iter)->getServiceType() << SL_INFO_END;            
+            it = m_serviceTypes.insert( it, (*iter)->getServiceType() );
+SL_START << "        Type: " << (*iter)->getServiceType() << SL_INFO_END;                        
+        }
+    }
+    return &m_serviceTypes;
+}
 
 /** {@inheritDoc} */
 void TopicServices::addService( serviceRegistrationPtr_t reg ) 
 {     
     m_services.insert( reg );
     clearServiceZones();
+    clearServiceTypes();
 }
 
 /** {@inheritDoc} */
@@ -178,10 +205,12 @@ void TopicServices::removeService( serviceRegistrationPtr_t reg )
 {
     m_services.erase( reg );
     clearServiceZones();
+    clearServiceTypes();
 }
 
 /** {@inheritDoc} */
-serviceRegistrationPtr_t TopicServices::getNextService( const char* targetServiceTenantGuid )
+serviceRegistrationPtr_t TopicServices::getNextService( const char* targetServiceTenantGuid, 
+    const char* serviceType )
 {
     if( !m_servicesByZone.get() )
     {
@@ -192,7 +221,8 @@ serviceRegistrationPtr_t TopicServices::getNextService( const char* targetServic
     // Search for service by zone
     for( auto iter = m_servicesByZone->begin(); iter != m_servicesByZone->end(); iter++ )
     {
-        const serviceRegistrationPtr_t& service = (*iter)->getNextService( targetServiceTenantGuid );
+        const serviceRegistrationPtr_t& service = (*iter)->getNextService( 
+            targetServiceTenantGuid, serviceType );
         if( service.get() )
         {
             return service;

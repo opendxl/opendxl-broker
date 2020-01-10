@@ -64,6 +64,10 @@ void freeDxlMessage(struct dxl_message_context_t *context, dxl_message_t* messag
 dxl_message_error_t dxlMessageToBytes(struct dxl_message_context_t *context,
     unsigned char** bytes, size_t* size, dxl_message_t* message, int stripClientGuids);
 
+/* Assigns a new message identifier */
+dxl_message_error_t dxlMessageAssignNewMessageId(struct dxl_message_context_t *context,
+    dxl_message_t* message, const char* prefix);
+
 /*
  * Provide api to release bytes, to prevent memory operations from crossing dll boundaries
  * The buffer was allocated by dxlMessageToBytes
@@ -108,10 +112,6 @@ dxl_message_error_t setDxlMessageClientGuids(struct dxl_message_context_t *conte
 dxl_message_error_t setDxlRequestMessageAttributes(struct dxl_message_context_t *context,
     dxl_message_t* message, enum dxl_request_attribute_t type, const char* replyToTopic);
 
-/* Request multi-service - data is copied */
-dxl_message_error_t setDxlRequestMultiService(struct dxl_message_context_t *context,
-    dxl_message_t* message, bool isMultiService);
-
 /* Response (and response error) attributes - data is copied */
 dxl_message_error_t setDxlResponseMessageAttributes(struct dxl_message_context_t *context,
     dxl_message_t* message, const char* requestMessageId);
@@ -144,6 +144,15 @@ dxl_message_error_t setDxlMessageSourceTenantGuid(struct dxl_message_context_t *
 /* The destination tenant GUIDs */
 dxl_message_error_t setDxlMessageTenantGuids(struct dxl_message_context_t *context,
     dxl_message_t* message, const char* tenantGuids[], size_t tenantGuidCount);
+
+////////////////////////////////////////////////////////////////////////////
+// Version 4
+////////////////////////////////////////////////////////////////////////////
+
+/* Request multi-service - data is copied */
+dxl_message_error_t setDxlRequestMultiService(struct dxl_message_context_t *context,
+    dxl_message_t* message, bool isMultiService);
+
 
 #if defined __cplusplus
 }

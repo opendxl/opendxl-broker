@@ -152,6 +152,8 @@ struct DxlMessageConstants
     static const char* PROP_PROPERTIES;
     /** Set of request channels property */
     static const char* PROP_REQUEST_CHANNELS;
+    /** A requests property */
+    static const char* PROP_REQUESTS;
     /** The registration time */
     static const char* PROP_REGISTRATION_TIME;
     /** Services property */

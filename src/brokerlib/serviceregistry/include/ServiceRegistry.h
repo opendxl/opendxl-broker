@@ -95,6 +95,19 @@ public:
     void doUnregisterService( serviceRegistrationPtr_t reg, bool fireEvent );
 
     /**
+     * Returns the unique types for the services for the specified topic
+     * <P>
+     * NOTE: This is returning a pointer for efficiency. The returned value
+     * should not be retained.
+     * </P>
+     *
+     * @param   topic The topic
+     * @return  The unique types for the specified topic or NULL if there are no 
+     *          services for the topic
+     */
+    topicServiceTypes_t *getServiceTypes(const std::string &topic);
+
+    /**
      * Finds the service with the specified GUID and the specified tenant GUID
      *
      * @param   serviceGuid The GUID of the service
@@ -109,9 +122,12 @@ public:
      *
      * @param   topic The topic
      * @param   targetServiceTenantGuid The tenant GUID to find the service for
+     * @param   serviceType The type of the service to retrieve (or any type if NULL)
      * @return  The next service for processing a request on the specified topic
      */
-    serviceRegistrationPtr_t getNextService( const std::string& topic, const char* targetServiceTenantGuid = "" );
+    serviceRegistrationPtr_t getNextService( const std::string& topic, 
+        const char* targetServiceTenantGuid = "",
+        const char* serviceType = NULL );
 
     /**
      * Returns the services that are the specified service type and, optionally, the specified tenant GUID

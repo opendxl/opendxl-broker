@@ -41,7 +41,9 @@ void ZoneServices::removeService( serviceRegistrationPtr_t reg )
 }
 
 /** {@inheritDoc} */
-serviceRegistrationPtr_t ZoneServices::getNextService( const char* targetServiceTenantGuid )
+serviceRegistrationPtr_t ZoneServices::getNextService( 
+    const char* targetServiceTenantGuid,
+    const char* serviceType )
 {
     const int size = (int)m_services.size();
     for( int i = 0; i < size; i++ )
@@ -59,6 +61,7 @@ serviceRegistrationPtr_t ZoneServices::getNextService( const char* targetService
         // 2.) The service has not expired.
         // 3.) The client (hosting the service) is authorized to receive the request
         // 4.) The service is available for the requesting tenant
+        // 5.) The service is the correct type (if applicable)
         if( ( ptr->isLocal() || 
                 m_brokerRegistry.getNextBroker( 
                     m_localBrokerGuid, ptr->getBrokerGuid() ).length() > 0 ) &&
@@ -68,7 +71,8 @@ serviceRegistrationPtr_t ZoneServices::getNextService( const char* targetService
                     ptr->getClientGuid(), getTopic() ) :
                 m_authService->isAuthorizedToSubscribe( 
                     ptr->getCertificatesUtHash(), getTopic() ) ) &&
-            ( ptr->isServiceAvailable( targetServiceTenantGuid ) ) )
+            ( ptr->isServiceAvailable( targetServiceTenantGuid ) ) &&
+            ( !serviceType || ( ptr->getServiceType().compare( serviceType ) == 0 ) ) )
         {
             return ptr;
         }

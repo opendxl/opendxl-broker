@@ -23,8 +23,14 @@ class DxlRequest : public DxlMessage
 friend class dxl::broker::message::DxlMessageService;
 
 public:    
+    /** Copy constructor */
+    DxlRequest( const DxlRequest& reg );
+
     /** Destructor */
     virtual ~DxlRequest();
+
+    /** Assignment operator */
+    DxlRequest& operator=( const DxlRequest& other );    
 
     /**
      * Returns the request's "reply to" topic
@@ -59,7 +65,7 @@ public:
      *
      * @return  Whether to perform a multi-service request
      */
-    bool getMultiServiceRequest() const;
+    bool isMultiServiceRequest() const;
 
 protected:
     /** 

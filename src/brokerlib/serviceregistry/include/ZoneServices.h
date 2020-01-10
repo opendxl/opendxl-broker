@@ -78,9 +78,11 @@ public:
      * Returns the next service for processing a request
      *
      * @param   targetServiceTenantGuid The tenant GUID to find the service for
+     * @param   serviceType The type of service to lookup (optional)
      * @return  The next service for processing a request
      */
-    serviceRegistrationPtr_t getNextService( const char* targetServiceTenantGuid = "" );
+    serviceRegistrationPtr_t getNextService( const char* targetServiceTenantGuid = "",
+        const char* serviceType = NULL );
 
 private:
     /** The zone */

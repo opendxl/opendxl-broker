@@ -29,8 +29,14 @@ class DxlMessage
 friend class dxl::broker::message::DxlMessageService;
 
 public:
+    /** Copy constructor */
+    DxlMessage( const DxlMessage& reg );
+
     /** Destructor */
     virtual ~DxlMessage();
+
+    /** Assignment operator */
+    virtual DxlMessage& operator=( const DxlMessage& other );
 
     /**
      * Whether this message is a DXL request  message
@@ -66,6 +72,13 @@ public:
      * @return  The message id
      */
     const char* getMessageId() const;
+
+    /**
+     * Generates and assigns a new message id for the message
+     * 
+     * @param   prefix An optional message id prefix
+     */
+    void assignNewMessageId(const char* prefix = NULL);
 
     /**
      * Returns the source broker guid

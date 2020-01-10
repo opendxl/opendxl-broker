@@ -12,6 +12,21 @@ DxlRequest::DxlRequest( dxl_message_t* msg ) : DxlMessage( msg )
 }
 
 /** {@inheritDoc} */
+DxlRequest::DxlRequest( const DxlRequest& req ) : DxlMessage( req )
+{
+}
+
+/** {@inheritDoc} */
+DxlRequest& DxlRequest::operator=(const DxlRequest& other )
+{    
+    if( this != &other )
+    {
+        DxlMessage::operator=( other );
+    }
+    return *this;
+}
+
+/** {@inheritDoc} */
 const char* DxlRequest::getReplyToTopic() const
 {
     return getMessage()->dxl_message_specificData.requestData->replyToTopic;
@@ -42,7 +57,7 @@ void DxlRequest::setMultiServiceRequest( bool isMultiServiceRequest )
 }
 
 /** {@inheritDoc} */
-bool DxlRequest::getMultiServiceRequest() const
+bool DxlRequest::isMultiServiceRequest() const
 {
     return getMessage()->dxl_message_specificData.requestData->isMultiServiceRequest;
 }
