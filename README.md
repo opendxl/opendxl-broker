@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/opendxl/opendxl-broker.png?branch=master)](https://travis-ci.org/opendxl/opendxl-broker)
+[![Actions Status](https://github.com/opendxl/opendxl-broker/workflows/Build/badge.svg)](https://github.com/opendxl/opendxl-broker/actions)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Docker Build Status](https://img.shields.io/docker/build/opendxl/opendxl-broker.svg)](https://hub.docker.com/r/opendxl/opendxl-broker/)
 
