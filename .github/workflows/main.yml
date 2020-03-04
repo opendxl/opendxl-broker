@@ -45,6 +45,7 @@ jobs:
         
     - name: Execute CI
       run: |
+        cd opendxl-client-java
         ./gradlew test --info --console=plain
         sed -i -e "s/= false/= true/g" -e "s/;8883/;443/g" -e "s/Brokers/BrokersWebSockets/g"  clientconfig/dxlclient.config
         cat clientconfig/dxlclient.config
