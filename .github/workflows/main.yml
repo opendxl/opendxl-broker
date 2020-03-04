@@ -33,12 +33,6 @@ jobs:
         docker pull opendxl/opendxl-broker
         docker run -d -p 8883:8883 -p 8443:8443 opendxl/opendxl-broker
         docker ps -a
-              
-    - name: Install dependencies
-      run: |
-        pip install wheel
-        pip install .[test]
-        python setup.py install
 
     - name: Provision client
       run: |
