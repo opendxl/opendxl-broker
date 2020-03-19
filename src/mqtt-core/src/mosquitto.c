@@ -31,6 +31,7 @@ POSSIBILITY OF SUCH DAMAGE.
 /* For initgroups() */
 #  include <unistd.h>
 #  include <grp.h>
+#  include <sys/time.h>
 
 #include <pwd.h>
 
