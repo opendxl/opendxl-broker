@@ -74,12 +74,16 @@ static string lookupCertExtension( int asn1nid )
     else
     {
         // Find the Tenant GUID extension
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
         X509_CINF *cert_inf = cert->cert_info;
         STACK_OF(X509_EXTENSION) *ext_list = NULL;
         if( cert_inf )
         {
             ext_list = cert_inf->extensions;
         }
+#else
+        const STACK_OF(X509_EXTENSION) *ext_list = X509_get0_extensions(cert);
+#endif
 
         if( ext_list )
         {
