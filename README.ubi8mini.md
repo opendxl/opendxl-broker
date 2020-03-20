@@ -5,6 +5,8 @@
 A README related to building a Red Hat Universal Base Image 8 compatible version of the OpenDXL broker.
 
 ## Documentation
+Changes to the broker for OpenSSL 1.1.0 and provide a mechanism for OpenDXL broker compatibility with Red Hat Universal Base Image 8
+
 A valid Red Hat subscription is required in order to access the UBI 8 image. 
 Once validated with a docker login, it will be possible to build the broker with reference to the UBI 8 image.
 
