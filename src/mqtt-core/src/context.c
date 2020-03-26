@@ -228,7 +228,7 @@ void mqtt3_context_cleanup(struct mosquitto_db *db, struct mosquitto *context, b
         // DXL start
         context->msg_count = 0;
         context->msg_count12 = 0;
-        context->subscription_count = 0;        
+        context->subscription_count = 0;
         // DXL end
 #ifdef PACKET_COUNT
         context->packet_count = 0;

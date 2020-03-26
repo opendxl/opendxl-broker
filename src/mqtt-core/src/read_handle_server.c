@@ -70,6 +70,26 @@ void mqtt3_dxl_set_max_connect_count(int count)
 {
     s_max_connect_count = count;
 }
+
+/** 
+ * Generates a GUID and returns it. It is up to the caller to free the returned string.
+ *
+ * @return  A newly generated GUID
+ */
+static char* generate_guid()
+{
+    char* guid = NULL;
+
+    // Create a guid using OS libuuid mechanism (v2.17.2).
+    const unsigned int messageSize = 40u;
+    guid = (char *)_mosquitto_malloc(messageSize * sizeof(char));
+    if (!guid)
+        return NULL;
+    uuid_t newGuid;
+    uuid_generate_random(newGuid);
+    uuid_unparse_lower(newGuid, guid);
+    return guid;
+}
 // DXL End
 
 int mqtt3_handle_connect(struct mosquitto_db *db, struct mosquitto *context)
@@ -240,6 +260,11 @@ int mqtt3_handle_connect(struct mosquitto_db *db, struct mosquitto *context)
         _mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "Context connect, id: %s",
             client_id);
     }
+    // DXL: Generate a unique identifier
+    _mosquitto_free(client_id);
+    client_id = generate_guid();
+    if (!client_id)
+        return MOSQ_ERR_NOMEM;
     // DXL End
 
     slen = (int)strlen(client_id);

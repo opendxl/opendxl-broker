@@ -27,11 +27,14 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: ${{ matrix.java-version }}     
-                
+
+    - name: Build broker
+      run: |
+        docker build -t opendxlbroker:opendxlbroker .
+
     - name: Install broker
       run: |
-        docker pull opendxl/opendxl-broker
-        docker run -d -p 8883:8883 -p 8443:8443 -p 443:443 opendxl/opendxl-broker
+        docker run -d -p 8883:8883 -p 8443:8443 -p 443:443 opendxlbroker:opendxlbroker
         docker ps -a
 
     - name: Provision client
