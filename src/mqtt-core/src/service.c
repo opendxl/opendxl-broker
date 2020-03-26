@@ -138,11 +138,12 @@ void __stdcall service_main(DWORD dwArgc, LPTSTR *lpszArgv)
 void service_install(void)
 {
     SC_HANDLE sc_manager, svc_handle;
-    char exe_path[MAX_PATH + 5];
+    char exe_path[MAX_PATH + 7];
     SERVICE_DESCRIPTION svc_desc;
 
-    GetModuleFileName(NULL, exe_path, MAX_PATH);
-    strcat(exe_path, " run");
+    exe_path[0] = '\"';
+    GetModuleFileName(NULL, exe_path+sizeof(exe_path[0]), MAX_PATH);
+    strcat(exe_path, "\" run");
 
     sc_manager = OpenSCManager(NULL, NULL, SC_MANAGER_CREATE_SERVICE);
     if(sc_manager){
