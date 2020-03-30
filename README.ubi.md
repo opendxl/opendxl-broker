@@ -10,7 +10,7 @@ Changes to provide a mechanism for OpenDXL broker compatibility with Red Hat Uni
 A valid Red Hat subscription is required in order to access the UBI 8 image. 
 Once validated with a docker login, it will be possible to build the broker with reference to the UBI 8 image.
 
-Build a docker image with reference to the Dockerfile.ubi8mini
+Build a docker image with reference to the Dockerfile.ubi
 
 ## Bugs and Feedback
 
