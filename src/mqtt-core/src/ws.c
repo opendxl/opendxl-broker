@@ -352,7 +352,7 @@ callback_mqtt(struct lws *wsi, enum lws_callback_reasons reason,
 
         // If the connection is marked dead, nothing to do for us.
         if(data->mosq->state == mosq_cs_ws_dead)
-            return 0;
+            return -1;
 
         ret = _mosquitto_packet_write(data->mosq);
         LOG_DEBUG("Exiting LWS_CALLBACK_SERVER_WRITEABLE. wsi[%p]", (void*)wsi);
