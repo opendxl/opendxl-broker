@@ -2,12 +2,12 @@
 # Compile Broker
 ###############################################################################
 
-FROM debian:stretch-slim as builder
+FROM centos:8 as builder
 ARG build_docs=false
 
 # Packages (OpenSSL, Boost)
-RUN apt-get update -y \
-    && apt-get install -y libssl1.0-dev libboost-dev cmake uuid-dev wget build-essential
+RUN yum group install -y "Development Tools" \
+    && yum install -y openssl-devel boost-devel cmake libuuid-devel wget
 
 # Message Pack
 RUN cd /tmp \
@@ -45,7 +45,9 @@ RUN cd /tmp/src && make
 # Generate documentation
 COPY docs /tmp/docs
 RUN mkdir /tmp/docs-output
-RUN if [ "$build_docs" = "true" ]; then apt-get -y install flex bison python3 doxygen \
+RUN if [ "$build_docs" = "true" ]; then dnf install -y 'dnf-command(config-manager)' \
+    && yum config-manager --set-enabled PowerTools \
+    && yum -y install flex bison python3 doxygen \
     && cd /tmp/docs \
     && . /tmp/src/version \
     && sed -i "s,@PROJECT_NUMBER@,$SOMAJVER.$SOMINVER.$SOSUBMINVER.$SOBLDNUM,g" doxygen.config \
@@ -55,22 +57,14 @@ RUN if [ "$build_docs" = "true" ]; then apt-get -y install flex bison python3 do
 # Build Broker Image
 ###############################################################################
 
-FROM debian:stretch-slim
+FROM registry.redhat.io/ubi8/ubi-minimal:latest
 
 ARG DXL_CONSOLE_VERSION=0.3.3
 
 # Install packages
-RUN apt-get update -y \
-    && apt-get install -y libssl1.0 wget uuid-runtime python iproute2 procps \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Python PIP
-RUN wget -O get-pip.py 'https://bootstrap.pypa.io/get-pip.py' \
-    && python get-pip.py --disable-pip-version-check --no-cache-dir \
-    && rm -f get-pip.py \
-    && cp -f /usr/local/bin/pip2 /usr/local/bin/pip \
-    && pip install dxlconsole==${DXL_CONSOLE_VERSION}
+RUN microdnf install -y shadow-utils util-linux wget python2-pip openssl procps-ng uuid libuuid iproute \
+    && alternatives --set python /usr/bin/python2 \
+    && pip2 install dxlconsole==${DXL_CONSOLE_VERSION}
 
 COPY dxlbroker /dxlbroker
 COPY LICENSE* /dxlbroker/
@@ -84,7 +78,7 @@ COPY --from=builder /tmp/docs-output /dxlbroker/docs
 RUN mkdir /dxlbroker-volume
 
 # Add user
-RUN adduser --home /dxlbroker --disabled-password --gecos "" dxl \
+RUN useradd -d /dxlbroker -c "" dxl \
     && chown -R dxl:dxl /dxlbroker-volume \
     && chown -R dxl:dxl /dxlbroker
 
