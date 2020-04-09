@@ -12,4 +12,4 @@ Once validated with a Docker login, the broker can be built with the RedHat UBI 
 
 To build the Docker image, run a command similar to the following from the root directory:
 
-`docker build . -f redhat-ubi/Dockerfile`
+`docker build . -f docker/redhat-ubi/Dockerfile`
