@@ -3,7 +3,7 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 DOCKERFILE_TEMPLATE="$DIR/Dockerfile.template"
 DEB_STRETCH_SLIM_DOCKERFILE="$DIR/../Dockerfile"
-RH_UBI_DOCKERFILE="$DIR/../redhat-ubi/Dockerfile"
+RH_UBI_DOCKERFILE="$DIR/redhat-ubi/Dockerfile"
 
 #
 # Function that is invoked when the script fails.
