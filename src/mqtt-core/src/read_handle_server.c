@@ -260,11 +260,13 @@ int mqtt3_handle_connect(struct mosquitto_db *db, struct mosquitto *context)
         _mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "Context connect, id: %s",
             client_id);
     }
-    // DXL: Generate a unique identifier
-    _mosquitto_free(client_id);
-    client_id = generate_guid();
-    if (!client_id)
-        return MOSQ_ERR_NOMEM;
+    // DXL: Generate a unique identifier (if not a bridge)
+    if(context->tls_certtype != broker){
+        _mosquitto_free(client_id);
+        client_id = generate_guid();
+        if (!client_id)
+            return MOSQ_ERR_NOMEM;
+    }
     // DXL End
 
     slen = (int)strlen(client_id);
