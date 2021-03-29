@@ -1,6 +1,6 @@
 [![Actions Status](https://github.com/opendxl/opendxl-broker/workflows/Build/badge.svg)](https://github.com/opendxl/opendxl-broker/actions)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Docker Build Status](https://img.shields.io/docker/build/opendxl/opendxl-broker.svg)](https://hub.docker.com/r/opendxl/opendxl-broker/)
+[![Docker Build Status](https://img.shields.io/docker/cloud/build/opendxl/opendxl-broker.svg)](https://hub.docker.com/r/opendxl/opendxl-broker/)
 
 
 # OpenDXL Broker
