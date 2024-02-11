@@ -73,7 +73,7 @@ RUN apt-get update -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python PIP
-RUN wget -O get-pip.py 'https://bootstrap.pypa.io/get-pip.py' \
+RUN wget -O get-pip.py 'https://bootstrap.pypa.io/pip/2.7/get-pip.py' \
     && python get-pip.py --disable-pip-version-check --no-cache-dir \
     && rm -f get-pip.py \
     && cp -f /usr/local/bin/pip2 /usr/local/bin/pip \
