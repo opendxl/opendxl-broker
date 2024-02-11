@@ -1,8 +1,15 @@
+FROM debian:stretch-slim as base
+# Debian stretch is totally out of date we have to get packages from another repo
+COPY <<EOF /etc/apt/sources.list
+deb http://archive.debian.org/debian-security stretch/updates main
+deb http://archive.debian.org/debian stretch main
+EOF
+
 ###############################################################################
 # Compile Broker
 ###############################################################################
 
-FROM debian:stretch-slim as builder
+FROM base as builder
 ARG build_docs=false
 
 # Packages (OpenSSL, Boost)
@@ -55,7 +62,7 @@ RUN if [ "$build_docs" = "true" ]; then apt-get -y install flex bison python3 do
 # Build Broker Image
 ###############################################################################
 
-FROM debian:stretch-slim
+FROM base
 
 ARG DXL_CONSOLE_VERSION=0.3.3
 
