@@ -1,8 +1,15 @@
+FROM debian:stretch-slim as base
+# Debian stretch is totally out of date we have to get packages from another repo
+COPY <<EOF /etc/apt/sources.list
+deb http://archive.debian.org/debian-security stretch/updates main
+deb http://archive.debian.org/debian stretch main
+EOF
+
 ###############################################################################
 # Compile Broker
 ###############################################################################
 
-FROM debian:stretch-slim as builder
+FROM base as builder
 ARG build_docs=false
 
 # Packages (OpenSSL, Boost)
@@ -55,7 +62,7 @@ RUN if [ "$build_docs" = "true" ]; then apt-get -y install flex bison python3 do
 # Build Broker Image
 ###############################################################################
 
-FROM debian:stretch-slim
+FROM base
 
 ARG DXL_CONSOLE_VERSION=0.3.3
 
@@ -66,7 +73,7 @@ RUN apt-get update -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python PIP
-RUN wget -O get-pip.py 'https://bootstrap.pypa.io/get-pip.py' \
+RUN wget -O get-pip.py 'https://bootstrap.pypa.io/pip/2.7/get-pip.py' \
     && python get-pip.py --disable-pip-version-check --no-cache-dir \
     && rm -f get-pip.py \
     && cp -f /usr/local/bin/pip2 /usr/local/bin/pip \
